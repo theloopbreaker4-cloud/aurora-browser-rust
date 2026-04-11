@@ -1,0 +1,28 @@
+# Rust
+target/
+Cargo.lock
+
+# Claude Code — internal AI tooling, not for public
+.claude/
+
+# User data (personal, machine-specific)
+config.json
+bookmarks.json
+
+# Compiled icon generator
+gen_icon.exe
+gen_icon.pdb
+
+# Distribution builds
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

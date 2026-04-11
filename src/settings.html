@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Aurora Settings</title>
+<script>var AURORA_CONFIG=__CONFIG_JSON__;var AURORA_LOCALE=__LOCALE_JSON__;var IPC_TOKEN="__IPC_TOKEN__";</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#111a2e;color:#d7e2f2;font-family:'Segoe UI',sans-serif;padding:32px 56px}
+.page{max-width:980px;margin:0 auto}
+h1{font-size:30px;font-weight:600;color:#7fffd4;margin-bottom:8px;letter-spacing:1px}
+.subhead{font-size:12px;color:#6f829c;margin-bottom:24px}
+.section{background:rgba(12,18,34,0.92);border:1px solid rgba(60,80,120,0.25);border-radius:14px;padding:20px 22px;margin-bottom:16px}
+.section-title{font-size:13px;font-weight:700;color:#8da0be;margin-bottom:12px;letter-spacing:0.4px;text-transform:uppercase}
+.row{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:12px 0;border-bottom:1px solid rgba(60,80,120,0.12)}
+.row:last-child{border-bottom:none}
+.row-label{font-size:14px;color:#c1cce0}
+.row-desc{font-size:11px;color:#5f7390;margin-top:4px;max-width:520px}
+.control{display:flex;align-items:center;gap:10px}
+select,input[type=text]{background:#0a1020;color:#cfe0f0;border:1px solid rgba(60,80,120,0.35);border-radius:8px;padding:8px 12px;font-size:13px;outline:none;min-width:220px}
+select:focus,input:focus{border-color:rgba(0,255,170,0.35);box-shadow:0 0 0 2px rgba(0,255,170,0.08)}
+button{background:#12263d;color:#cfe8f4;border:1px solid rgba(0,255,170,0.25);border-radius:8px;padding:8px 14px;font-size:12px;letter-spacing:0.3px;cursor:pointer}
+button:hover{border-color:rgba(0,255,170,0.45);box-shadow:0 6px 18px rgba(0,0,0,0.2)}
+button:disabled{opacity:0.45;cursor:default;box-shadow:none}
+.version{color:#4a5a70;font-size:11px;margin-top:22px;text-align:center}
+</style></head><body>
+<div class="page">
+<h1>Aurora Settings</h1>
+<div class="subhead">Clean defaults, minimal noise.</div>
+
+
+<div class="section">
+    <div class="section-title">Startup</div>
+    <div class="row">
+        <div><div class="row-label">On startup</div><div class="row-desc">Choose what opens when Aurora starts.</div></div>
+        <select id="startupSelect" onchange="changeStartup(this.value)">
+            <option value="newtab">Open New Tab</option>
+            <option value="continue">Continue where you left off</option>
+            <option value="home">Open home page</option>
+        </select>
+    </div>
+    <div class="row">
+        <div><div class="row-label">Home page</div><div class="row-desc">Used for Home button and when startup is set to home.</div></div>
+        <input id="homeInput" type="text" placeholder="aurora://newtab" onblur="changeHome(this.value)" onkeydown="if(event.key==='Enter') this.blur()">
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Language</div>
+    <div class="row">
+        <div class="row-label">Interface Language</div>
+        <select id="langSelect" onchange="changeLang(this.value)">
+            <option value="en">English</option>
+            <option value="ru">Russian</option>
+        </select>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Search Engine</div>
+    <div class="row">
+        <div><div class="row-label">Default Search</div><div class="row-desc">Used for the address bar and new tab search.</div></div>
+        <select id="searchSelect" onchange="changeSearch(this.value)">
+            <option value="google">Google</option>
+            <option value="duckduckgo">DuckDuckGo</option>
+            <option value="bing">Bing</option>
+            <option value="startpage">Startpage</option>
+        </select>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Downloads</div>
+    <div class="row">
+        <div><div class="row-label">Download folder</div><div class="row-desc">Where files are saved by default.</div></div>
+        <input id="downloadInput" type="text" placeholder="Downloads" onblur="changeDownload(this.value)" onkeydown="if(event.key==='Enter') this.blur()">
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Privacy</div>
+    <div class="row">
+        <div><div class="row-label">Do Not Track</div><div class="row-desc">Request sites not to track you.</div></div>
+        <select id="dntSelect" onchange="changeDnt(this.value)">
+            <option value="on">On</option>
+            <option value="off">Off</option>
+        </select>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">About Aurora</div>
+    <div class="row">
+        <div><div class="row-label">Version</div><div class="row-desc">Aurora Browser v0.1.0</div></div>
+    </div>
+    <div class="row">
+        <div><div class="row-label">Engine</div><div class="row-desc" id="currentEngine">WebView2 (Chromium)</div></div>
+    </div>
+</div>
+
+<div class="version">Aurora Browser v0.1.0 - Built with Rust + wry</div>
+</div>
+
+<script>
+try {
+    const cfg = AURORA_CONFIG;
+    if(cfg.language) document.getElementById('langSelect').value = cfg.language;
+    if(cfg.search_engine) document.getElementById('searchSelect').value = cfg.search_engine;
+    if(cfg.startup) document.getElementById('startupSelect').value = cfg.startup;
+    if(cfg.homepage) document.getElementById('homeInput').value = cfg.homepage;
+    if(cfg.download_dir) document.getElementById('downloadInput').value = cfg.download_dir;
+    if(cfg.dnt) document.getElementById('dntSelect').value = cfg.dnt;
+} catch(e){}
+
+function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN + ":" + msg); }
+function engineLabel(v){
+    const labels={webview2:'WebView2',cef:'CEF',servo:'Servo',gecko:'Gecko',webkit:'WebKit'};
+    return labels[v]||v;
+}
+function requestEngineRestart(){ ipcSend('app:restart'); }
+function changeLang(v){ ipcSend('config:language:'+v); }
+function changeSearch(v){ ipcSend('config:search_engine:'+v); }
+function changeStartup(v){ ipcSend('config:startup:'+v); }
+function changeHome(v){ const val=(v||'').trim()||'aurora://newtab'; ipcSend('config:homepage:'+val); }
+function changeDownload(v){ const val=(v||'').trim(); ipcSend('config:download_dir:'+val); }
+function changeDnt(v){ ipcSend('config:dnt:'+v); }
+</script>
+</body></html>

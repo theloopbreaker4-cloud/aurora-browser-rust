@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><title>Aurora</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    height: 100vh; background: #030610; color: #e0e0e0;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; user-select: none;
+}
+.portal {
+    position: absolute; top:0; left:0; right:0; bottom:0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; overflow: hidden;
+}
+.aurora-svg-bg {
+    position: absolute; top:0; left:0; width:100%; height:100%;
+    z-index: 0; pointer-events: none;
+}
+.stars-layer {
+    position: absolute; top:0; left:0; right:0; bottom:0;
+    z-index: 1; pointer-events: none;
+}
+.star { position: absolute; background: #fff; border-radius: 50%; }
+@keyframes twinkle { 0%{opacity:0.1} 100%{opacity:0.9} }
+.portal-content {
+    z-index: 10; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+}
+.logo-wrap {
+    display: flex; flex-direction: column;
+    align-items: center; margin-bottom: 30px;
+}
+.logo-img {
+    width: 100px; height: 100px; margin-bottom: 16px;
+    border-radius: 50%;
+    filter: drop-shadow(0 0 25px rgba(0,255,170,0.35)) drop-shadow(0 0 50px rgba(0,255,170,0.15));
+}
+.portal-title {
+    font-size: 44px; font-weight: 600;
+    letter-spacing: 10px; text-transform: none;
+    background: linear-gradient(90deg,#a8ffe8,#6fe7ff,#9fffd1);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    font-family: 'Gabriola', 'Segoe Script', 'Palatino Linotype', 'Georgia', serif;
+    filter: drop-shadow(0 0 14px rgba(0,255,200,0.45)) drop-shadow(0 0 30px rgba(0,255,200,0.18));
+}
+.portal-search-wrap {
+    width: 560px; max-width: 85%; height: 44px;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(10,16,30,0.75);
+    border: 1px solid rgba(0,255,170,0.1);
+    border-radius: 22px; padding: 0 18px;
+    margin-bottom: 45px; backdrop-filter: blur(10px);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.portal-search-wrap:focus-within {
+    border-color: rgba(0,255,170,0.3);
+    box-shadow: 0 0 20px rgba(0,255,170,0.06);
+}
+.portal-search-wrap svg { width:16px; height:16px; stroke:#3a5a70; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+.portal-search {
+    flex:1; height:100%; background:transparent; border:none;
+    color:#c0d8e8; font-size:14px; outline:none;
+}
+.portal-search::placeholder { color:#2a3a50; }
+.bookmarks { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.bookmark {
+    width: 120px; height: 100px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px;
+    background: rgba(10,16,30,0.65);
+    border: 1px solid rgba(40,60,100,0.15);
+    border-radius: 14px; cursor: pointer;
+    transition: all 0.25s; text-decoration: none; color: #c0d0e0;
+    backdrop-filter: blur(8px);
+}
+.bookmark:hover {
+    background: rgba(20,35,60,0.8);
+    border-color: rgba(0,255,170,0.2);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+    transform: translateY(-4px);
+}
+.bookmark-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+}
+.bookmark-title { font-size: 11px; color: #7a8a9a; }
+</style>
+</head>
+<body>
+<div class="portal">
+    <!-- SVG Aurora -->
+    <svg class="aurora-svg-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+        <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#010308"/>
+                <stop offset="25%" stop-color="#040a18"/>
+                <stop offset="55%" stop-color="#081228"/>
+                <stop offset="80%" stop-color="#0c1830"/>
+                <stop offset="100%" stop-color="#101e38"/>
+            </linearGradient>
+            <filter id="softBlur"><feGaussianBlur stdDeviation="120"/></filter>
+            <filter id="medBlur"><feGaussianBlur stdDeviation="85"/></filter>
+            <filter id="wideBlur"><feGaussianBlur stdDeviation="140"/></filter>
+            <filter id="coreGlow"><feGaussianBlur stdDeviation="55"/></filter>
+            <filter id="edgeFeather">
+                <feGaussianBlur stdDeviation="28"/>
+            </filter>
+            <radialGradient id="auroraFeather" cx="50%" cy="35%" r="70%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                <stop offset="45%" stop-color="#ffffff" stop-opacity="0.8"/>
+                <stop offset="75%" stop-color="#ffffff" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+            </radialGradient>
+            <mask id="auroraMask">
+                <rect width="1440" height="900" fill="url(#auroraFeather)"/>
+            </mask>
+            <linearGradient id="ag1" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#00ff8c" stop-opacity="0"/>
+                <stop offset="10%" stop-color="#00ff8c" stop-opacity="0.08"/>
+                <stop offset="25%" stop-color="#00ffa0" stop-opacity="0.28"/>
+                <stop offset="40%" stop-color="#00ffb4" stop-opacity="0.45"/>
+                <stop offset="50%" stop-color="#20ffc0" stop-opacity="0.5"/>
+                <stop offset="60%" stop-color="#00ffa8" stop-opacity="0.4"/>
+                <stop offset="75%" stop-color="#00e8c0" stop-opacity="0.22"/>
+                <stop offset="90%" stop-color="#00d0ff" stop-opacity="0.08"/>
+                <stop offset="100%" stop-color="#00d0ff" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="ag2" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#00c8b0" stop-opacity="0"/>
+                <stop offset="20%" stop-color="#00dcc0" stop-opacity="0.12"/>
+                <stop offset="40%" stop-color="#00ffd0" stop-opacity="0.28"/>
+                <stop offset="55%" stop-color="#00ffb8" stop-opacity="0.32"/>
+                <stop offset="70%" stop-color="#00e0d0" stop-opacity="0.2"/>
+                <stop offset="85%" stop-color="#00c0ff" stop-opacity="0.1"/>
+                <stop offset="100%" stop-color="#00b0ff" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="ag3" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#40ffa0" stop-opacity="0"/>
+                <stop offset="30%" stop-color="#30ff90" stop-opacity="0.1"/>
+                <stop offset="50%" stop-color="#50ffb0" stop-opacity="0.18"/>
+                <stop offset="70%" stop-color="#20ffa0" stop-opacity="0.1"/>
+                <stop offset="100%" stop-color="#40ffa0" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="centerGlow" cx="50%" cy="30%" r="50%">
+                <stop offset="0%" stop-color="#00ffa8" stop-opacity="0.12"/>
+                <stop offset="40%" stop-color="#00ff90" stop-opacity="0.06"/>
+                <stop offset="100%" stop-color="#00ff90" stop-opacity="0"/>
+            </radialGradient>
+        </defs>
+        <rect width="1440" height="900" fill="url(#sky)"/>
+        <rect width="1440" height="900" fill="url(#centerGlow)"/>
+        <g mask="url(#auroraMask)" filter="url(#edgeFeather)">
+            <ellipse cx="720" cy="160" rx="1000" ry="200" fill="url(#ag3)" filter="url(#wideBlur)" opacity="0.5">
+                <animateTransform attributeName="transform" type="translate" values="0,0;30,8;-20,-5;15,3;0,0" dur="30s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.3;0.5;0.38;0.46;0.3" dur="25s" repeatCount="indefinite"/>
+            </ellipse>
+            <ellipse cx="720" cy="200" rx="900" ry="140" fill="url(#ag1)" filter="url(#softBlur)" opacity="0.6">
+                <animateTransform attributeName="transform" type="translate" values="-30,0;40,10;-20,-8;35,5;-30,0" dur="24s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.5;0.7;0.55;0.65;0.5" dur="16s" repeatCount="indefinite"/>
+                <animate attributeName="ry" values="140;170;125;160;140" dur="20s" repeatCount="indefinite"/>
+            </ellipse>
+            <ellipse cx="700" cy="240" rx="850" ry="120" fill="url(#ag2)" filter="url(#softBlur)" opacity="0.45">
+                <animateTransform attributeName="transform" type="translate" values="25,-3;-45,8;30,0;-35,-5;25,-3" dur="28s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.35;0.55;0.4;0.5;0.35" dur="18s" repeatCount="indefinite"/>
+            </ellipse>
+            <ellipse cx="750" cy="120" rx="750" ry="100" fill="url(#ag3)" filter="url(#wideBlur)" opacity="0.35">
+                <animateTransform attributeName="transform" type="translate" values="-15,3;30,-4;-25,6;20,0;-15,3" dur="26s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.25;0.4;0.3;0.45;0.25" dur="22s" repeatCount="indefinite"/>
+            </ellipse>
+            <ellipse cx="720" cy="195" rx="550" ry="50" fill="#00ffa0" filter="url(#medBlur)" opacity="0.22">
+                <animateTransform attributeName="transform" type="translate" values="-20,0;30,5;-15,-3;25,2;-20,0" dur="18s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.15;0.3;0.2;0.26;0.15" dur="12s" repeatCount="indefinite"/>
+                <animate attributeName="ry" values="50;68;42;62;50" dur="14s" repeatCount="indefinite"/>
+            </ellipse>
+            <ellipse cx="720" cy="190" rx="400" ry="20" fill="#40ffb0" filter="url(#coreGlow)" opacity="0.26">
+                <animateTransform attributeName="transform" type="translate" values="-15,0;25,4;-10,-2;20,1;-15,0" dur="16s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.18;0.35;0.22;0.3;0.18" dur="10s" repeatCount="indefinite"/>
+                <animate attributeName="ry" values="20;32;16;30;20" dur="11s" repeatCount="indefinite"/>
+            </ellipse>
+            <g filter="url(#wideBlur)" opacity="0.08">
+                <rect x="280" y="80" width="8" height="250" fill="#00ffa0" rx="4"><animate attributeName="height" values="250;300;230;280;250" dur="12s" repeatCount="indefinite"/></rect>
+                <rect x="480" y="60" width="8" height="280" fill="#00ffb0" rx="4"><animate attributeName="height" values="280;240;300;260;280" dur="14s" repeatCount="indefinite"/></rect>
+                <rect x="680" y="50" width="10" height="300" fill="#20ffc0" rx="5"><animate attributeName="height" values="300;340;280;320;300" dur="11s" repeatCount="indefinite"/></rect>
+                <rect x="880" y="65" width="8" height="270" fill="#00ffe0" rx="4"><animate attributeName="height" values="270;310;250;290;270" dur="13s" repeatCount="indefinite"/></rect>
+                <rect x="1080" y="75" width="7" height="250" fill="#00ffa0" rx="3"><animate attributeName="height" values="250;290;240;270;250" dur="10s" repeatCount="indefinite"/></rect>
+            </g>
+        </g>
+        <defs>
+            <linearGradient id="bottomFade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#030610" stop-opacity="0"/>
+                <stop offset="30%" stop-color="#040a15" stop-opacity="0.18"/>
+                <stop offset="65%" stop-color="#050c18" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#060d1a" stop-opacity="0.9"/>
+            </linearGradient>
+            <filter id="bottomBlur"><feGaussianBlur stdDeviation="26"/></filter>
+        </defs>
+        <rect x="0" y="420" width="1440" height="520" fill="url(#bottomFade)" opacity="0.85" filter="url(#bottomBlur)"/>
+        <rect x="0" y="520" width="1440" height="420" fill="url(#bottomFade)" opacity="0.9"/>
+    </svg>
+
+    <div class="stars-layer" id="starsLayer"></div>
+
+    <div class="portal-content">
+        <div class="logo-wrap">
+            <img class="logo-img" src="data:image/png;base64,__ICON_BASE64__" alt="Aurora" onerror="this.style.display='none'">
+            <h1 class="portal-title">Aurora</h1>
+        </div>
+        <div class="portal-search-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input class="portal-search" id="portalSearch" type="text"
+                   placeholder="Search the web..."
+                   onkeydown="if(event.key==='Enter') navigateFromPortal(this.value)">
+        </div>
+        <div class="bookmarks" id="bookmarksGrid"></div>
+    </div>
+</div>
+
+<script>
+const IPC_TOKEN = "__IPC_TOKEN__";
+const BOOKMARKS = __BOOKMARKS_JSON__;
+
+function ipcSend(msg) {
+    window.ipc.postMessage(IPC_TOKEN + ":" + msg);
+}
+
+(function(){
+    const c=document.getElementById('starsLayer');
+    for(let i=0;i<250;i++){
+        const s=document.createElement('div');
+        s.className='star';
+        s.style.left=Math.random()*100+'%';
+        s.style.top=Math.random()*65+'%';
+        const sz=Math.random()*2+0.5;
+        s.style.width=s.style.height=sz+'px';
+        s.style.opacity=Math.random()*0.5+0.1;
+        s.style.animation=`twinkle ${2+Math.random()*5}s ease-in-out ${Math.random()*5}s infinite alternate`;
+        c.appendChild(s);
+    }
+})();
+
+function loadBookmarks(){
+    const grid=document.getElementById('bookmarksGrid');
+    grid.innerHTML='';
+    const meta={
+        'YouTube':{bg:'#1a0a0a',icon:'<svg viewBox="0 0 24 24" width="26" height="26"><rect x="2" y="4" width="20" height="16" rx="4" fill="#ff0000"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>'},
+        'Google':{bg:'#0a1a15',icon:'<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="10" fill="#1a1a2e"/><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="bold" fill="#4285f4" font-family="Arial">G</text></svg>'},
+        'Wikipedia':{bg:'#121212',icon:'<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="10" fill="#1a1a1a"/><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff" font-family="serif">W</text></svg>'},
+        'GitHub':{bg:'#0a0a12',icon:'<svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#1a1a2e"/><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85 0 1.7.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0022 12c0-5.52-4.48-10-10-10z" fill="#ccc"/></svg>'},
+        'Startpage':{bg:'#0a1218',icon:'<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="10" fill="#0a1828"/><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="bold" fill="#00aaff" font-family="Arial">S</text></svg>'},
+    };
+    for(const[title,url] of Object.entries(BOOKMARKS)){
+        const m=meta[title]||{bg:'#101520',icon:`<span style="font-size:20px;font-weight:bold;color:#7fffd4">${title[0]}</span>`};
+        const a=document.createElement('a');
+        a.className='bookmark'; a.href=url;
+        a.onclick=(e)=>{e.preventDefault();navigateFromPortal(url);};
+        a.innerHTML=`<div class="bookmark-icon" style="background:${m.bg}">${m.icon}</div><div class="bookmark-title">${title}</div>`;
+        grid.appendChild(a);
+    }
+}
+
+function navigateFromPortal(input){
+    let url=input.trim();
+    if(!url)return;
+    if(!url.includes('.')&&!url.startsWith('http'))
+        url='https://www.google.com/search?q='+encodeURIComponent(url);
+    else if(!url.startsWith('http://') && !url.startsWith('https://'))
+        url='https://'+url;
+    ipcSend('navigate:'+url);
+}
+
+loadBookmarks();
+</script>
+</body></html>
