@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scroll &amp; Interaction Test — Servo Fix Verification</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: monospace; background: #111; color: #eee; margin: 0; }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    background: #1a1a2e;
+    border-bottom: 2px solid #36a;
+    padding: 8px 16px;
+    z-index: 100;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .toolbar h1 { font-size: 14px; color: #7af; margin: 0; }
+  .toolbar .status { font-size: 11px; color: #aaa; margin-left: auto; }
+  #scroll-counter { color: #4f4; font-weight: bold; }
+
+  .content { padding: 16px; }
+  h2 { color: #fa7; font-size: 14px; margin-top: 24px; border-bottom: 1px solid #444; padding-bottom: 4px; }
+  .desc { color: #aaa; font-size: 12px; margin-bottom: 8px; }
+
+  /* Click test */
+  .click-box {
+    display: inline-block;
+    background: #36a;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    user-select: none;
+    margin: 4px;
+    transition: background 0.15s;
+  }
+  .click-box:active { background: #54c; }
+  .click-box.clicked { background: #4a4; }
+  #click-result { font-size: 12px; color: #4f4; margin-top: 8px; height: 18px; }
+
+  /* Mouse tracking */
+  #mouse-track {
+    width: 100%;
+    height: 100px;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    position: relative;
+    cursor: crosshair;
+    overflow: hidden;
+  }
+  #mouse-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #36a;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    display: none;
+  }
+  #mouse-coords { font-size: 11px; color: #888; margin-top: 4px; }
+
+  /* Keyboard test */
+  #key-input {
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #eee;
+    font-size: 13px;
+    padding: 8px 12px;
+    width: 300px;
+    outline: none;
+    font-family: monospace;
+  }
+  #key-input:focus { border-color: #36a; }
+  #key-log { font-size: 11px; color: #888; margin-top: 6px; height: 60px; overflow: auto; background: #0a0a0a; border: 1px solid #333; padding: 4px; border-radius: 2px; }
+
+  /* Scroll area */
+  #scroll-area {
+    height: 200px;
+    overflow: auto;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+  }
+  .scroll-item {
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border-left: 3px solid #36a;
+    font-size: 12px;
+    background: #0d0d0d;
+  }
+  #scroll-pos { font-size: 11px; color: #888; margin-top: 4px; }
+
+  /* Hover test */
+  .hover-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .hover-cell {
+    height: 40px;
+    background: #1a1a2e;
+    border: 1px solid #2a2a4e;
+    border-radius: 3px;
+    transition: background 0.1s, transform 0.1s;
+    cursor: default;
+  }
+  .hover-cell:hover {
+    background: #36a;
+    transform: scale(1.05);
+  }
+
+  /* Long scrollable content */
+  .long-section {
+    height: 1200px;
+    background: linear-gradient(to bottom, #111, #1a1a2e);
+    padding: 16px;
+    position: relative;
+  }
+  .scroll-marker {
+    position: absolute;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 11px;
+    color: #444;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>Scroll &amp; Interaction Test</h1>
+  <span class="status">Scroll: <span id="scroll-counter">0</span>px | Mouse: <span id="mouse-status">–</span></span>
+</div>
+
+<div class="content">
+  <h2>Mouse Tracking</h2>
+  <p class="desc">Move mouse inside the box — dot should follow cursor. Tests mousemove event delivery.</p>
+  <div id="mouse-track">
+    <div id="mouse-dot"></div>
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:11px; color:#444; pointer-events:none;">Move mouse here</div>
+  </div>
+  <div id="mouse-coords">Position: –</div>
+
+  <h2>Click Tests</h2>
+  <p class="desc">Click each button. It should change color and count clicks. Tests mousedown/mouseup event delivery.</p>
+  <div>
+    <span class="click-box" id="btn-a">Button A</span>
+    <span class="click-box" id="btn-b">Button B</span>
+    <span class="click-box" id="btn-c">Button C</span>
+  </div>
+  <div id="click-result"></div>
+
+  <h2>Hover Test</h2>
+  <p class="desc">Hover over cells — each should highlight. Tests :hover CSS pseudo-class.</p>
+  <div class="hover-grid" id="hover-grid"></div>
+
+  <h2>Keyboard Input</h2>
+  <p class="desc">Click the input, type something. Tests keyboard event delivery and text input.</p>
+  <input type="text" id="key-input" placeholder="Type here...">
+  <div id="key-log"></div>
+
+  <h2>Scroll Area (inner)</h2>
+  <p class="desc">Scroll inside this box. Position counter should update. Tests scroll events on non-document elements.</p>
+  <div id="scroll-area">
+    <div id="scroll-pos">Scroll position: 0px</div>
+  </div>
+
+  <h2>Long Page Scroll Test</h2>
+  <p class="desc">Scroll the whole page down. The counter in the top bar should update. Markers at 200px intervals.</p>
+  <div class="long-section">
+    <div class="scroll-marker" style="top:0;">↓ 0px — scroll starts here</div>
+    <div class="scroll-marker" style="top:200px;">↓ 200px</div>
+    <div class="scroll-marker" style="top:400px;">↓ 400px</div>
+    <div class="scroll-marker" style="top:600px;">↓ 600px</div>
+    <div class="scroll-marker" style="top:800px;">↓ 800px</div>
+    <div class="scroll-marker" style="top:1000px;">↓ 1000px</div>
+    <div class="scroll-marker" style="top:1150px; color:#4f4;">↓ 1150px — almost at bottom</div>
+  </div>
+</div>
+
+<script>
+  // Mouse tracking
+  const track = document.getElementById('mouse-track');
+  const dot = document.getElementById('mouse-dot');
+  const coords = document.getElementById('mouse-coords');
+  const mouseStatus = document.getElementById('mouse-status');
+
+  track.addEventListener('mousemove', e => {
+    const rect = track.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    dot.style.left = x + 'px';
+    dot.style.top = y + 'px';
+    dot.style.display = 'block';
+    coords.textContent = `Position: ${Math.round(x)}, ${Math.round(y)}`;
+    mouseStatus.textContent = `${Math.round(e.clientX)}, ${Math.round(e.clientY)}`;
+  });
+  track.addEventListener('mouseleave', () => { dot.style.display = 'none'; });
+
+  // Click tests
+  let clickCount = 0;
+  const clickResult = document.getElementById('click-result');
+  ['btn-a', 'btn-b', 'btn-c'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('click', () => {
+      clickCount++;
+      el.classList.add('clicked');
+      el.textContent = el.id.replace('btn-', 'Button ').toUpperCase() + ' (' + clickCount + ')';
+      clickResult.textContent = `Last click: ${id} — total: ${clickCount}`;
+    });
+  });
+
+  // Hover grid
+  const grid = document.getElementById('hover-grid');
+  for (let i = 0; i < 18; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'hover-cell';
+    cell.title = `Cell ${i+1}`;
+    grid.appendChild(cell);
+  }
+
+  // Keyboard
+  const keyInput = document.getElementById('key-input');
+  const keyLog = document.getElementById('key-log');
+  keyInput.addEventListener('keydown', e => {
+    const line = document.createElement('div');
+    line.textContent = `keydown: ${e.key} (code: ${e.code})`;
+    keyLog.insertBefore(line, keyLog.firstChild);
+    if (keyLog.children.length > 10) keyLog.removeChild(keyLog.lastChild);
+  });
+
+  // Inner scroll area
+  const scrollArea = document.getElementById('scroll-area');
+  const scrollPos = document.getElementById('scroll-pos');
+  // Fill with items
+  for (let i = 1; i <= 20; i++) {
+    const div = document.createElement('div');
+    div.className = 'scroll-item';
+    div.textContent = `Item ${i} — scroll to see more`;
+    scrollArea.appendChild(div);
+  }
+  scrollArea.addEventListener('scroll', () => {
+    scrollPos.textContent = `Scroll position: ${scrollArea.scrollTop}px`;
+  });
+
+  // Page scroll counter
+  const scrollCounter = document.getElementById('scroll-counter');
+  window.addEventListener('scroll', () => {
+    scrollCounter.textContent = Math.round(window.scrollY);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Aurora Browser — Test Suite</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  header {
+    margin-bottom: 32px;
+  }
+  header h1 { color: #58a6ff; font-size: 22px; margin-bottom: 6px; }
+  header p { color: #8b949e; font-size: 13px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 16px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .card:hover {
+    border-color: #58a6ff;
+    background: #1c2330;
+  }
+  .card-icon { font-size: 28px; margin-bottom: 10px; }
+  .card h2 { color: #e6edf3; font-size: 14px; margin-bottom: 6px; }
+  .card p { color: #8b949e; font-size: 12px; line-height: 1.5; }
+  .card .tags { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 10px;
+    color: #8b949e;
+  }
+  .tag.fix { color: #3fb950; border-color: #238636; background: #1f4e3d; }
+  .tag.partial { color: #ffa657; border-color: #9e6a03; background: #3a2a1a; }
+  footer {
+    margin-top: 40px;
+    color: #484f58;
+    font-size: 11px;
+    border-top: 1px solid #21262d;
+    padding-top: 16px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Aurora Browser — Test Suite</h1>
+  <p>Test pages for Servo engine fixes and feature verification.<br>
+     Open in Aurora with Servo engine active to verify fixes.</p>
+</header>
+
+<div class="grid">
+  <a class="card" href="test-flexbox-alignment.html">
+    <div class="card-icon">⬜</div>
+    <h2>Flexbox Alignment</h2>
+    <p>Tests justify-content, align-items, align-content, align-self with all alignment values including the fixed LEFT, RIGHT, SELF_START, SELF_END cases.</p>
+    <div class="tags">
+      <span class="tag fix">LEFT fix</span>
+      <span class="tag fix">RIGHT fix</span>
+      <span class="tag fix">SELF_START fix</span>
+      <span class="tag fix">SELF_END fix</span>
+      <span class="tag">flexbox</span>
+      <span class="tag">align</span>
+    </div>
+  </a>
+
+  <a class="card" href="test-css-position.html">
+    <div class="card-icon">📌</div>
+    <h2>CSS Positioning</h2>
+    <p>Tests position:relative, position:absolute, inset centering, margin:auto centering, stacking (z-index), nested positioned containers, and sticky.</p>
+    <div class="tags">
+      <span class="tag">absolute</span>
+      <span class="tag">relative</span>
+      <span class="tag">inset</span>
+      <span class="tag">z-index</span>
+      <span class="tag partial">sticky→relative</span>
+    </div>
+  </a>
+
+  <a class="card" href="test-scroll-interaction.html">
+    <div class="card-icon">🖱</div>
+    <h2>Scroll &amp; Interaction</h2>
+    <p>Tests mouse tracking (mousemove), click events, keyboard input, hover effects, inner scroll areas, and full-page scrolling with position counter.</p>
+    <div class="tags">
+      <span class="tag">mousemove</span>
+      <span class="tag">click</span>
+      <span class="tag">keyboard</span>
+      <span class="tag">scroll</span>
+      <span class="tag">hover</span>
+    </div>
+  </a>
+
+  <a class="card" href="test-css-position-table.html">
+    <div class="card-icon">📋</div>
+    <h2>CSS Position in Tables</h2>
+    <p>Tests position:relative on td, tr, tbody elements. Fixed: relative_adjustement() now applied in create_fragment() for table cells. Also tests absolute children inside relative td.</p>
+    <div class="tags">
+      <span class="tag fix">td relative fix</span>
+      <span class="tag">tr relative</span>
+      <span class="tag">tbody relative</span>
+      <span class="tag">table abspos</span>
+    </div>
+  </a>
+
+  <a class="card" href="test-css-counters.html">
+    <div class="card-icon">🔢</div>
+    <h2>CSS Counters</h2>
+    <p>Tests counter-reset, counter-increment, counter() and counters() functions. Decimal, lower-alpha, upper-roman, nested counters with separators, reversed() counters.</p>
+    <div class="tags">
+      <span class="tag fix">counter() fix</span>
+      <span class="tag fix">counters() fix</span>
+      <span class="tag">counter-reset</span>
+      <span class="tag">counter-increment</span>
+      <span class="tag">list-item</span>
+    </div>
+  </a>
+
+  <a class="card" href="test-engine-info.html">
+    <div class="card-icon">ℹ</div>
+    <h2>Engine Info &amp; Feature Detection</h2>
+    <p>Detects current engine from User-Agent, runs CSS.supports() and JS typeof checks for 30+ features, shows known Servo status for Aurora fork.</p>
+    <div class="tags">
+      <span class="tag">feature detection</span>
+      <span class="tag">CSS.supports</span>
+      <span class="tag">user-agent</span>
+    </div>
+  </a>
+</div>
+
+<footer>
+  Aurora Browser — Servo Engine Test Suite<br>
+  To load: address bar → <code>file:///D:/Works/AuroraBrowserRust/tests/index.html</code><br>
+  Or run: <code>aurora.exe file:///D:/Works/AuroraBrowserRust/tests/index.html --engine=servo</code>
+</footer>
+</body>
+</html>

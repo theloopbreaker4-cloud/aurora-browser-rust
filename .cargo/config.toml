@@ -1,0 +1,7 @@
+# Aurora Browser — build configuration
+
+[env]
+# Prebuilt SpiderMonkey archive — avoids rebuilding mozjs from source (~30min).
+# This archive was produced by the servo/mozjs build in the ServoRust workspace.
+# Update this path if you move the ServoRust repo or rebuild servo from scratch.
+MOZJS_ARCHIVE = { value = "D:\\Works\\ServoRust\\servo\\target\\debug\\build\\mozjs_sys-9d0d160957c3530b\\out\\libmozjs-x86_64-pc-windows-msvc.tar.gz", force = false }

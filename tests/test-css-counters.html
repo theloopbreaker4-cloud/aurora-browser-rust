@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CSS Counters Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: monospace; background: #0d1117; color: #c9d1d9; padding: 32px; }
+  h1 { color: #58a6ff; font-size: 20px; margin-bottom: 24px; }
+  h2 { color: #e6edf3; font-size: 14px; margin: 20px 0 8px; border-bottom: 1px solid #30363d; padding-bottom: 4px; }
+  .pass { color: #3fb950; }
+  .fail { color: #f85149; }
+  .section { margin-bottom: 24px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
+
+  /* --- Test 1: Basic decimal counter --- */
+  #test-decimal { counter-reset: section; }
+  #test-decimal li { counter-increment: section; list-style: none; }
+  #test-decimal li::before { content: counter(section) ". "; color: #58a6ff; }
+
+  /* --- Test 2: Ordered list with counter --- */
+  #test-ordered { counter-reset: item; }
+  #test-ordered li { counter-increment: item; list-style: none; }
+  #test-ordered li::before { content: counter(item, lower-alpha) ") "; color: #ffa657; }
+
+  /* --- Test 3: Nested counters (counters()) --- */
+  #test-nested { counter-reset: chapter; }
+  #test-nested > li { counter-increment: chapter; counter-reset: section; list-style: none; }
+  #test-nested > li::before { content: counter(chapter) ". "; color: #58a6ff; font-weight: bold; }
+  #test-nested > li > ul { margin-left: 20px; }
+  #test-nested > li > ul > li { counter-increment: section; list-style: none; }
+  #test-nested > li > ul > li::before { content: counters(chapter, ".") "." counter(section) " "; color: #3fb950; }
+
+  /* --- Test 4: Roman numerals --- */
+  #test-roman { counter-reset: roman-c; }
+  #test-roman li { counter-increment: roman-c; list-style: none; }
+  #test-roman li::before { content: counter(roman-c, upper-roman) ". "; color: #d2a8ff; }
+
+  /* --- Test 5: CSS list-item auto-counter (ol) --- */
+  ol#test-ol { list-style-type: decimal; margin-left: 20px; }
+
+  /* --- Test 6: Reversed counter --- */
+  #test-reversed { counter-reset: rev reversed(5); }
+  #test-reversed li { counter-increment: rev; list-style: none; }
+  #test-reversed li::before { content: counter(rev) " "; color: #ffa657; }
+</style>
+</head>
+<body>
+<h1>CSS Counters Test — Aurora/Servo</h1>
+
+<div class="section">
+  <h2>Test 1: counter(name) — decimal</h2>
+  <p style="color:#8b949e;font-size:12px;margin-bottom:8px">Expected: 1. Item A, 2. Item B, 3. Item C</p>
+  <ul id="test-decimal">
+    <li>Item A</li>
+    <li>Item B</li>
+    <li>Item C</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Test 2: counter(name, lower-alpha)</h2>
+  <p style="color:#8b949e;font-size:12px;margin-bottom:8px">Expected: a) First, b) Second, c) Third</p>
+  <ul id="test-ordered">
+    <li>First</li>
+    <li>Second</li>
+    <li>Third</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Test 3: counters(name, ".") — nested</h2>
+  <p style="color:#8b949e;font-size:12px;margin-bottom:8px">Expected: 1. Chapter, 1.1 Section, 1.2 Section, 2. Chapter, 2.1 Section</p>
+  <ul id="test-nested">
+    <li>Chapter One
+      <ul>
+        <li>Section</li>
+        <li>Section</li>
+      </ul>
+    </li>
+    <li>Chapter Two
+      <ul>
+        <li>Section</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Test 4: counter(name, upper-roman)</h2>
+  <p style="color:#8b949e;font-size:12px;margin-bottom:8px">Expected: I. One, II. Two, III. Three, IV. Four</p>
+  <ul id="test-roman">
+    <li>One</li>
+    <li>Two</li>
+    <li>Three</li>
+    <li>Four</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Test 5: Native &lt;ol&gt; list-item counter</h2>
+  <p style="color:#8b949e;font-size:12px;margin-bottom:8px">Expected: 1. Alpha, 2. Beta, 3. Gamma</p>
+  <ol id="test-ol">
+    <li>Alpha</li>
+    <li>Beta</li>
+    <li>Gamma</li>
+  </ol>
+</div>
+
+<div class="section">
+  <h2>Test 6: Reversed counter (counter-reset: reversed())</h2>
+  <p style="color:#8b949e;font-size:12px;margin-bottom:8px">Expected: 5, 4, 3, 2, 1 (counting down)</p>
+  <ul id="test-reversed">
+    <li>Five</li>
+    <li>Four</li>
+    <li>Three</li>
+    <li>Two</li>
+    <li>One</li>
+  </ul>
+</div>
+
+<div class="section" id="result-section">
+  <h2>Auto-check via JS</h2>
+  <div id="results"></div>
+</div>
+
+<script>
+  function check(desc, el, expectedPrefix) {
+    const div = document.createElement('div');
+    const style = window.getComputedStyle(el, '::before');
+    const content = style.getPropertyValue('content');
+    // content returns quoted string like '"1. "' in Chrome
+    const ok = content && content !== 'none' && content !== 'normal';
+    div.innerHTML = (ok ? '<span class="pass">✓</span>' : '<span class="fail">✗</span>') +
+      ' ' + desc + ' — content::before = ' + content;
+    div.style.fontSize = '12px';
+    div.style.marginBottom = '4px';
+    document.getElementById('results').appendChild(div);
+  }
+
+  const firstDecimal = document.querySelector('#test-decimal li');
+  const firstAlpha   = document.querySelector('#test-ordered li');
+  const firstRoman   = document.querySelector('#test-roman li');
+  const firstNested  = document.querySelector('#test-nested > li > ul > li');
+
+  check('decimal counter', firstDecimal, '1');
+  check('lower-alpha counter', firstAlpha, 'a');
+  check('upper-roman counter', firstRoman, 'I');
+  check('nested counters()', firstNested, '1.1');
+</script>
+</body>
+</html>

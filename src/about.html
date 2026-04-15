@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>About Aurora</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+    height:100vh;background:#030610;color:#d0dcea;
+    font-family:'Segoe UI',sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+}
+.aurora-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.container{
+    z-index:10;display:flex;flex-direction:column;align-items:center;
+    text-align:center;max-width:480px;padding:48px 40px;
+    background:rgba(8,12,24,0.6);
+    border:1px solid rgba(0,255,170,0.08);
+    border-radius:20px;backdrop-filter:blur(20px);
+}
+.logo{
+    width:80px;height:80px;border-radius:50%;margin-bottom:22px;
+    filter:drop-shadow(0 0 24px rgba(0,255,170,0.3)) drop-shadow(0 0 48px rgba(0,255,170,0.12));
+}
+.brand{
+    font-size:38px;font-weight:600;letter-spacing:8px;
+    background:linear-gradient(90deg,#a8ffe8,#6fe7ff,#9fffd1);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    font-family:'Gabriola','Segoe Script','Georgia',serif;
+    margin-bottom:6px;
+}
+.version{
+    font-size:13px;color:#3a6a80;margin-bottom:28px;letter-spacing:0.5px;
+}
+.divider{width:100%;height:1px;background:rgba(0,255,170,0.08);margin-bottom:24px}
+.info-row{
+    display:flex;justify-content:space-between;align-items:center;
+    width:100%;padding:8px 0;
+    border-bottom:1px solid rgba(40,60,100,0.15);
+    font-size:13px;
+}
+.info-row:last-of-type{border-bottom:none}
+.info-label{color:#4a6a84}
+.info-value{color:#8ab0c8}
+.links{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;justify-content:center}
+.link-btn{
+    background:rgba(8,16,30,0.8);color:#7fffd4;
+    border:1px solid rgba(0,255,170,0.2);
+    border-radius:8px;padding:8px 18px;
+    font-size:12px;cursor:pointer;letter-spacing:0.3px;
+    transition:border-color 0.2s,box-shadow 0.2s;
+    text-decoration:none;display:inline-block;
+}
+.link-btn:hover{border-color:rgba(0,255,170,0.45);box-shadow:0 4px 16px rgba(0,255,170,0.08)}
+.tagline{font-size:11px;color:#2a3a52;margin-top:24px;line-height:1.6}
+</style>
+</head>
+<body>
+<svg class="aurora-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#010308"/>
+    <stop offset="100%" stop-color="#060e1c"/>
+</linearGradient>
+<filter id="blur1"><feGaussianBlur stdDeviation="110"/></filter>
+<filter id="blur2"><feGaussianBlur stdDeviation="80"/></filter>
+<linearGradient id="ag1" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#00ff8c" stop-opacity="0"/>
+    <stop offset="40%" stop-color="#00ffa0" stop-opacity="0.18"/>
+    <stop offset="60%" stop-color="#20ffc0" stop-opacity="0.22"/>
+    <stop offset="100%" stop-color="#00d0ff" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="ag2" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#00c8b0" stop-opacity="0"/>
+    <stop offset="50%" stop-color="#00ffd0" stop-opacity="0.12"/>
+    <stop offset="100%" stop-color="#00b0ff" stop-opacity="0"/>
+</linearGradient>
+</defs>
+<rect width="1440" height="900" fill="url(#sky)"/>
+<ellipse cx="720" cy="160" rx="960" ry="140" fill="url(#ag1)" filter="url(#blur1)" opacity="0.65">
+    <animate attributeName="opacity" values="0.45;0.75;0.55;0.65;0.45" dur="20s" repeatCount="indefinite"/>
+</ellipse>
+<ellipse cx="700" cy="220" rx="800" ry="100" fill="url(#ag2)" filter="url(#blur2)" opacity="0.4">
+    <animate attributeName="opacity" values="0.3;0.55;0.38;0.48;0.3" dur="16s" repeatCount="indefinite"/>
+</ellipse>
+</svg>
+
+<div class="container">
+    <img class="logo" src="data:image/png;base64,__ICON_BASE64__" alt="Aurora" onerror="this.style.display='none'">
+    <div class="brand">Aurora</div>
+    <div class="version">Version __VERSION__</div>
+    <div class="divider"></div>
+    <div class="info-row"><span class="info-label">Engine</span><span class="info-value">WebView2 (Chromium)</span></div>
+    <div class="info-row"><span class="info-label">Runtime</span><span class="info-value">Rust + wry __WRY_VERSION__</span></div>
+    <div class="info-row"><span class="info-label">Platform</span><span class="info-value">__PLATFORM__</span></div>
+    <div class="info-row"><span class="info-label">Build</span><span class="info-value">__BUILD_DATE__</span></div>
+    <div class="links">
+        <a class="link-btn" href="#" onclick="ipcSend('navigate:aurora://settings');return false">Settings</a>
+        <a class="link-btn" href="#" onclick="ipcSend('navigate:aurora://newtab');return false">New Tab</a>
+    </div>
+    <div class="tagline">Built with Rust &amp; wry · Fast · Private · Yours</div>
+</div>
+
+<script>
+const IPC_TOKEN = "__IPC_TOKEN__";
+function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+</script>
+</body></html>

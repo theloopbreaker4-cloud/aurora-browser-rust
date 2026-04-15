@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CSS Position in Tables — Servo Fix Verification</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; margin: 16px; }
+  h1 { color: #7af; font-size: 18px; }
+  h2 { color: #fa7; font-size: 14px; margin-top: 24px; border-bottom: 1px solid #444; }
+  .desc { color: #aaa; font-size: 12px; margin-bottom: 8px; }
+
+  table { border-collapse: collapse; border-spacing: 0; }
+  td { padding: 0; }
+  td > div { height: 50px; width: 50px; }
+
+  .group {
+    display: inline-block;
+    position: relative;
+    width: 150px;
+    height: 200px;
+    background: #222;
+    border: 1px solid #555;
+  }
+  .indicator {
+    position: absolute;
+    background-color: red;
+    left: 0;
+    top: 100px;
+    height: 50px;
+    width: 50px;
+    z-index: 0;
+  }
+  .relative-td {
+    position: relative;
+    top: 100px;
+    background-color: green;
+  }
+  .relative-tr {
+    position: relative;
+    top: 20px;
+    background-color: transparent;
+  }
+  .relative-tbody {
+    position: relative;
+    top: 10px;
+  }
+</style>
+</head>
+<body>
+<h1>CSS Position in Tables — Servo Fix Verification</h1>
+<p class="desc">Tests for position:relative on td, tr, tbody. FIXED: relative_adjustement now applied in create_fragment() for table cells.</p>
+
+<h2>position:relative on &lt;td&gt; — top:100px</h2>
+<p class="desc">Green cell should be offset DOWN by 100px. Red indicator marks the target position. Green should COVER red.</p>
+<div class="group">
+  <div>
+    <div class="indicator"></div>
+    <table>
+      <tbody>
+        <tr><td class="relative-td"><div></div></td></tr>
+        <tr><td><div></div></td></tr>
+        <tr><td><div></div></td></tr>
+        <tr><td><div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h2>position:relative on &lt;td&gt; — left:30px</h2>
+<p class="desc">Green cell should be offset RIGHT by 30px.</p>
+<div style="display:inline-block; position:relative; width:200px; height:80px; background:#222; border:1px solid #555;">
+  <div style="position:absolute; background:red; left:30px; top:0; height:50px; width:50px; z-index:0;"></div>
+  <table>
+    <tbody>
+      <tr>
+        <td style="position:relative; left:30px; background:green;"><div></div></td>
+        <td><div></div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>position:relative on &lt;tr&gt; — top:20px</h2>
+<p class="desc">Entire row should be offset DOWN by 20px.</p>
+<div style="display:inline-block; position:relative; width:150px; height:120px; background:#222; border:1px solid #555;">
+  <div style="position:absolute; background:red; left:0; top:20px; height:50px; width:50px;"></div>
+  <table>
+    <tbody>
+      <tr class="relative-tr"><td style="background:green;"><div></div></td></tr>
+      <tr><td><div></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>position:relative on &lt;tbody&gt; — top:10px</h2>
+<p class="desc">All rows in tbody should be offset DOWN by 10px.</p>
+<div style="display:inline-block; position:relative; width:150px; height:130px; background:#222; border:1px solid #555;">
+  <div style="position:absolute; background:red; left:0; top:10px; height:50px; width:50px;"></div>
+  <table>
+    <tbody class="relative-tbody">
+      <tr><td style="background:green;"><div></div></td></tr>
+      <tr><td style="background:#36a;"><div></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>position:relative — negative offset on &lt;td&gt;</h2>
+<p class="desc">Green cell offset UP by 10px (top:-10px).</p>
+<div style="display:inline-block; position:relative; width:150px; height:120px; background:#222; border:1px solid #555; padding-top:20px;">
+  <table>
+    <tbody>
+      <tr><td><div style="background:#36a;"></div></td></tr>
+      <tr><td style="position:relative; top:-10px; background:green;"><div></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>position:relative — top:100% on &lt;tr&gt;</h2>
+<p class="desc">WPT test: position-relative-011. top:100% resolves against parent height, not used height.</p>
+<div style="background:#222; border:1px solid #555; width:200px; margin-bottom:8px;">
+  <table style="border-spacing:0; background:red;">
+    <tbody style="height:10px;">
+      <tr style="position:relative; top:100%;">
+        <td style="padding:0;">
+          <div style="position:relative; top:-10px; width:100px; height:100px; background:green;"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:11px; color:#aaa; margin:4px;">Should see green box, no red.</p>
+</div>
+
+<h2>Absolute child in relative td</h2>
+<p class="desc">Absolutely positioned child should be positioned relative to the td.</p>
+<div style="background:#222; border:1px solid #555; width:200px; height:100px; margin-bottom:8px;">
+  <table>
+    <tbody>
+      <tr>
+        <td style="position:relative; width:200px; height:100px;">
+          <div style="position:absolute; bottom:0; right:0; width:60px; height:30px; background:green; font-size:10px; line-height:30px; text-align:center; color:#fff;">abs</div>
+          <div style="width:100px; height:50px; background:#36a; font-size:11px; line-height:50px; text-align:center;">rel td</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<hr style="border-color:#444; margin-top:24px;">
+<p style="font-size:11px; color:#666;">
+  Fix: <code>create_fragment()</code> in table/layout.rs now applies <code>relative_adjustement()</code> for cells with <code>position:relative</code>.
+</p>
+</body>
+</html>

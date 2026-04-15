@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Aurora Downloads</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#030610;color:#d0dcea;font-family:'Segoe UI',sans-serif;min-height:100vh;padding:40px 56px}
+.page{max-width:900px;margin:0 auto}
+.page-header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.page-header svg{width:26px;height:26px;stroke:#00ffaa;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+h1{font-size:28px;font-weight:600;color:#7fffd4;letter-spacing:0.5px}
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.search-wrap{
+    flex:1;display:flex;align-items:center;gap:10px;
+    background:rgba(10,18,32,0.9);border:1px solid rgba(60,80,120,0.3);
+    border-radius:10px;padding:0 14px;height:38px;transition:border-color 0.2s;
+}
+.search-wrap:focus-within{border-color:rgba(0,255,170,0.3)}
+.search-wrap svg{width:14px;height:14px;stroke:#3a5a72;fill:none;stroke-width:2;flex-shrink:0}
+.search-input{flex:1;background:transparent;border:none;color:#b0c8e0;font-size:13px;outline:none}
+.search-input::placeholder{color:#2a3a50}
+.btn-clear{
+    background:#0a1020;color:#b0c8e0;
+    border:1px solid rgba(255,80,80,0.2);
+    border-radius:8px;padding:8px 16px;
+    font-size:12px;cursor:pointer;white-space:nowrap;
+}
+.btn-clear:hover{border-color:rgba(255,80,80,0.45)}
+.dl-list{display:flex;flex-direction:column;gap:8px}
+.dl-item{
+    background:rgba(8,14,28,0.85);border:1px solid rgba(40,60,100,0.2);
+    border-radius:12px;padding:14px 16px;
+    display:flex;align-items:center;gap:14px;
+    transition:background 0.15s;position:relative;
+}
+.dl-item:hover{background:rgba(12,22,44,0.9)}
+.dl-item:hover .dl-del{opacity:1}
+.file-icon{
+    width:36px;height:36px;border-radius:8px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;letter-spacing:0.3px;
+}
+.dl-info{flex:1;min-width:0}
+.dl-name{font-size:13px;color:#c0d8e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-meta{font-size:11px;color:#3a5a72;margin-top:3px;display:flex;gap:12px}
+.dl-src{font-size:10px;color:#2a3a52;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;max-width:500px}
+.dl-progress{height:3px;border-radius:2px;margin-top:8px;background:rgba(40,60,100,0.3);overflow:hidden}
+.dl-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,#00ffaa,#00c8ff);transition:width 0.3s}
+.status-badge{
+    font-size:10px;padding:2px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;
+}
+.status-done{background:rgba(0,80,50,0.2);color:#7fffd4;border:1px solid rgba(0,255,170,0.15)}
+.status-prog{background:rgba(0,60,100,0.2);color:#70b0e0;border:1px solid rgba(0,160,255,0.15)}
+.status-fail{background:rgba(80,0,0,0.2);color:#f08080;border:1px solid rgba(255,80,80,0.15)}
+.dl-del{
+    opacity:0;background:transparent;border:none;cursor:pointer;
+    color:#603030;padding:4px;flex-shrink:0;
+    transition:opacity 0.15s,color 0.15s;
+}
+.dl-del:hover{color:#ff6060}
+.dl-del svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.empty{text-align:center;padding:80px 20px;color:#2a3a50;font-size:14px;line-height:2}
+.empty svg{width:48px;height:48px;stroke:#1a2a3a;fill:none;stroke-width:1.2;display:block;margin:0 auto 16px}
+</style>
+</head>
+<body>
+<div class="page">
+    <div class="page-header">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <h1>Downloads</h1>
+    </div>
+    <div class="toolbar">
+        <div class="search-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input class="search-input" id="searchInput" placeholder="Search downloads..." oninput="filterDl(this.value)">
+        </div>
+        <button class="btn-clear" onclick="clearAll()">Clear All</button>
+    </div>
+    <div class="dl-list" id="dlList"></div>
+</div>
+
+<script>
+const IPC_TOKEN = "__IPC_TOKEN__";
+let DOWNLOADS = __DOWNLOADS_JSON__;
+
+function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+
+const EXT_COLORS={
+    pdf:{bg:'rgba(180,40,40,0.12)',color:'#f08080',label:'PDF'},
+    zip:{bg:'rgba(180,120,0,0.12)',color:'#e0a040',label:'ZIP'},
+    rar:{bg:'rgba(180,120,0,0.12)',color:'#e0a040',label:'RAR'},
+    mp4:{bg:'rgba(60,40,180,0.12)',color:'#8080f0',label:'MP4'},
+    mp3:{bg:'rgba(120,60,180,0.12)',color:'#c080f0',label:'MP3'},
+    jpg:{bg:'rgba(0,140,80,0.12)',color:'#60d0a0',label:'JPG'},
+    png:{bg:'rgba(0,140,80,0.12)',color:'#60d0a0',label:'PNG'},
+    exe:{bg:'rgba(100,0,0,0.12)',color:'#e06060',label:'EXE'},
+};
+function fileIcon(name){
+    const ext=(name.split('.').pop()||'').toLowerCase();
+    const c=EXT_COLORS[ext]||{bg:'rgba(40,60,100,0.12)',color:'#6080a0',label:ext.toUpperCase()||'FILE'};
+    return `<div class="file-icon" style="background:${c.bg};color:${c.color}">${c.label.slice(0,4)}</div>`;
+}
+function fmtSize(b){
+    if(!b) return '';
+    if(b<1024) return b+'B';
+    if(b<1048576) return (b/1024).toFixed(1)+'KB';
+    if(b<1073741824) return (b/1048576).toFixed(1)+'MB';
+    return (b/1073741824).toFixed(2)+'GB';
+}
+function fmtTime(ts){
+    if(!ts) return '';
+    const d=new Date(ts);
+    return d.toLocaleDateString([],{month:'short',day:'numeric'})+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+function escHtml(s){ const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+
+function statusBadge(s,pct){
+    if(s==='done') return '<span class="status-badge status-done">Done</span>';
+    if(s==='failed') return '<span class="status-badge status-fail">Failed</span>';
+    return `<span class="status-badge status-prog">${pct||0}%</span>`;
+}
+
+let filtered=[...DOWNLOADS];
+function render(data){
+    const list=document.getElementById('dlList');
+    if(!data.length){
+        list.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>No downloads yet</div>`;
+        return;
+    }
+    list.innerHTML=data.map(dl=>`
+        <div class="dl-item">
+            ${fileIcon(dl.name)}
+            <div class="dl-info" style="min-width:0">
+                <div class="dl-name">${escHtml(dl.name)}</div>
+                <div class="dl-meta">
+                    <span>${fmtSize(dl.size)}</span>
+                    <span>${fmtTime(dl.time)}</span>
+                </div>
+                <div class="dl-src">${escHtml(dl.url||'')}</div>
+                ${dl.status!=='done'?`<div class="dl-progress"><div class="dl-bar" style="width:${dl.pct||0}%"></div></div>`:''}
+            </div>
+            ${statusBadge(dl.status,dl.pct)}
+            <button class="dl-del" onclick="removeDl('${(dl.name).replace(/'/g,"\\'")}')">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+function filterDl(q){
+    const lq=q.toLowerCase();
+    filtered=DOWNLOADS.filter(d=>d.name.toLowerCase().includes(lq)||(d.url||'').toLowerCase().includes(lq));
+    render(filtered);
+}
+function removeDl(name){
+    DOWNLOADS=DOWNLOADS.filter(d=>d.name!==name);
+    filterDl(document.getElementById('searchInput').value);
+    ipcSend('download:remove:'+name);
+}
+function clearAll(){
+    if(!confirm('Clear all downloads?')) return;
+    DOWNLOADS=[];filtered=[];render([]);
+    ipcSend('download:clear');
+}
+
+render(DOWNLOADS);
+</script>
+</body></html>

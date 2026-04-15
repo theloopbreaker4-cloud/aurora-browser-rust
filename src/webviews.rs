@@ -1,6 +1,7 @@
 // webviews.rs — WebView construction and IPC message routing
 use crate::config;
 use crate::events::UserEvent;
+use crate::history;
 use crate::ipc::validate_ipc_message;
 use crate::portal;
 use crate::toolbar;
@@ -37,12 +38,22 @@ pub fn build_toolbar_webview(
             } else if msg.starts_with("menu:") {
                 // Menu items send "menu:action" → navigate to aurora://action
                 let action = msg.strip_prefix("menu:").unwrap_or("");
-                let _ = proxy_toolbar
-                    .send_event(UserEvent::Navigate(format!("aurora://{}", action)));
+                let _ =
+                    proxy_toolbar.send_event(UserEvent::Navigate(format!("aurora://{}", action)));
             } else if msg == "devtools" {
                 let _ = proxy_toolbar.send_event(UserEvent::OpenDevTools);
             } else if msg == "fullscreen" {
                 let _ = proxy_toolbar.send_event(UserEvent::ToggleFullscreen);
+            } else if msg == "minimize" {
+                let _ = proxy_toolbar.send_event(UserEvent::MinimizeWindow);
+            } else if msg == "maximize" {
+                let _ = proxy_toolbar.send_event(UserEvent::MaximizeWindow);
+            } else if msg == "close_window" {
+                let _ = proxy_toolbar.send_event(UserEvent::CloseWindow);
+            } else if msg == "drag_window" {
+                let _ = proxy_toolbar.send_event(UserEvent::DragWindow);
+            } else if let Some(engine) = msg.strip_prefix("switch_engine:") {
+                let _ = proxy_toolbar.send_event(UserEvent::SwitchEngine(engine.to_string()));
             } else if msg == "print" {
                 let _ = proxy_toolbar.send_event(UserEvent::Print);
             } else if let Some(z) = msg.strip_prefix("zoom:") {
@@ -51,6 +62,8 @@ pub fn build_toolbar_webview(
                 }
             } else if let Some(text) = msg.strip_prefix("find:") {
                 let _ = proxy_toolbar.send_event(UserEvent::FindText(text.to_string()));
+            } else if let Some(text) = msg.strip_prefix("findprev:") {
+                let _ = proxy_toolbar.send_event(UserEvent::FindPrev(text.to_string()));
             }
         })
         .with_devtools(true)
@@ -77,7 +90,6 @@ pub fn build_content_webview(
 
     WebViewBuilder::new()
         .with_bounds(bounds)
-        .with_background_color((3, 6, 16, 255))
         .with_html(initial_html)
         // Intercept target=_blank and other new-window requests — open in same view
         .with_new_window_req_handler(move |url| {
@@ -125,6 +137,12 @@ pub fn build_content_webview(
                 }
             } else if let Some(text) = msg.strip_prefix("find:") {
                 let _ = proxy_content.send_event(UserEvent::FindText(text.to_string()));
+            } else if let Some(rest) = msg.strip_prefix("history:push:") {
+                if let Ok(entry) = serde_json::from_str::<serde_json::Value>(rest) {
+                    let title = entry.get("title").and_then(|v| v.as_str()).unwrap_or("");
+                    let url = entry.get("url").and_then(|v| v.as_str()).unwrap_or("");
+                    history::push_history_entry(title, url);
+                }
             } else if msg.starts_with("config:") {
                 // Format: "config:key:value" — persisted to config.json next to exe
                 let parts: Vec<&str> = msg.splitn(3, ':').collect();
@@ -134,12 +152,13 @@ pub fn build_content_webview(
                     let config_str = fs::read_to_string(&config_path)
                         .or_else(|_| fs::read_to_string("config.json"))
                         .unwrap_or_else(|_| "{}".to_string());
-                    let new_config =
-                        config::update_config_value(&config_str, parts[1], parts[2]);
+                    let new_config = config::update_config_value(&config_str, parts[1], parts[2]);
                     // Write to both exe dir and cwd as fallback
                     let _ = fs::write(&config_path, &new_config);
                     let _ = fs::write("config.json", &new_config);
                 }
+            } else if let Some(engine) = msg.strip_prefix("switch_engine:") {
+                let _ = proxy_content.send_event(UserEvent::SwitchEngine(engine.to_string()));
             }
         })
         .with_devtools(true)

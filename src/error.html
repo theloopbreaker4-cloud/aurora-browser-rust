@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Aurora — Can't reach this page</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+    height:100vh;background:#030610;color:#d0dcea;
+    font-family:'Segoe UI',sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+}
+.aurora-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.container{
+    z-index:10;display:flex;flex-direction:column;align-items:center;
+    text-align:center;max-width:520px;padding:40px;
+}
+.icon-wrap{
+    width:88px;height:88px;border-radius:50%;
+    background:rgba(0,180,120,0.07);
+    border:1.5px solid rgba(0,255,170,0.15);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:28px;
+    box-shadow:0 0 40px rgba(0,255,170,0.06);
+}
+.icon-wrap svg{width:42px;height:42px;stroke:#3a7060;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+h1{
+    font-size:26px;font-weight:600;
+    color:#c0d8e8;margin-bottom:10px;
+}
+.url{
+    font-size:13px;color:#3a5a72;margin-bottom:20px;
+    word-break:break-all;max-width:440px;
+}
+.reason{
+    font-size:13px;color:#4a6a84;margin-bottom:32px;
+    line-height:1.6;
+}
+.code{
+    font-size:11px;color:#2a3a4e;margin-bottom:32px;
+    letter-spacing:0.5px;font-family:monospace;
+}
+.actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+button{
+    background:#0a1828;color:#b0cee0;
+    border:1px solid rgba(0,255,170,0.18);
+    border-radius:10px;padding:10px 22px;
+    font-size:13px;cursor:pointer;
+    transition:border-color 0.2s,box-shadow 0.2s;
+}
+button:hover{border-color:rgba(0,255,170,0.35);box-shadow:0 4px 16px rgba(0,0,0,0.25)}
+button.primary{
+    background:rgba(0,100,70,0.18);
+    border-color:rgba(0,255,170,0.28);
+    color:#7fffd4;
+}
+</style>
+</head>
+<body>
+<svg class="aurora-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#010308"/>
+    <stop offset="100%" stop-color="#060e1c"/>
+</linearGradient>
+<filter id="blur1"><feGaussianBlur stdDeviation="120"/></filter>
+<linearGradient id="ag" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#00ff8c" stop-opacity="0"/>
+    <stop offset="40%" stop-color="#00ffa0" stop-opacity="0.12"/>
+    <stop offset="60%" stop-color="#20ffc0" stop-opacity="0.16"/>
+    <stop offset="100%" stop-color="#00d0ff" stop-opacity="0"/>
+</linearGradient>
+</defs>
+<rect width="1440" height="900" fill="url(#sky)"/>
+<ellipse cx="720" cy="180" rx="900" ry="120" fill="url(#ag)" filter="url(#blur1)" opacity="0.6">
+    <animate attributeName="opacity" values="0.4;0.7;0.5;0.6;0.4" dur="18s" repeatCount="indefinite"/>
+</ellipse>
+</svg>
+
+<div class="container">
+    <div class="icon-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4m0 4h.01"/></svg>
+    </div>
+    <h1 id="title">Can't reach this page</h1>
+    <div class="url" id="failUrl"></div>
+    <div class="reason" id="reason">The site might be temporarily unavailable,<br>or you may have lost your internet connection.</div>
+    <div class="code" id="errCode"></div>
+    <div class="actions">
+        <button class="primary" onclick="reload()">Try again</button>
+        <button onclick="goBack()">Go back</button>
+        <button onclick="goHome()">New Tab</button>
+    </div>
+</div>
+
+<script>
+const IPC_TOKEN = "__IPC_TOKEN__";
+const ERROR_INFO = __ERROR_JSON__;
+
+function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+function reload(){ ipcSend("navigate:"+ERROR_INFO.url); }
+function goBack(){ ipcSend("back"); window.history.back(); }
+function goHome(){ ipcSend("navigate:aurora://newtab"); }
+
+if(ERROR_INFO.url){ document.getElementById('failUrl').textContent = ERROR_INFO.url; }
+if(ERROR_INFO.code){ document.getElementById('errCode').textContent = ERROR_INFO.code; }
+if(ERROR_INFO.title){ document.getElementById('title').textContent = ERROR_INFO.title; }
+if(ERROR_INFO.reason){ document.getElementById('reason').innerHTML = ERROR_INFO.reason; }
+</script>
+</body></html>

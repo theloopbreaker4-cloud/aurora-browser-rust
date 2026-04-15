@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flexbox Alignment Test — Servo Fix Verification</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; margin: 16px; }
+  h1 { color: #7af; font-size: 18px; }
+  h2 { color: #fa7; font-size: 14px; margin-top: 24px; border-bottom: 1px solid #444; }
+  .desc { color: #aaa; font-size: 12px; margin-bottom: 8px; }
+  .result { font-size: 12px; margin-top: 4px; }
+  .pass { color: #4f4; }
+  .fail { color: #f44; }
+
+  /* Test container base */
+  .flex-container {
+    display: flex;
+    background: #222;
+    border: 1px solid #555;
+    height: 160px;
+    width: 100%;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .flex-item {
+    background: #36a;
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 8px;
+    box-sizing: border-box;
+  }
+  .flex-item.sm { width: 80px; height: 40px; }
+  .flex-item.md { width: 120px; height: 60px; }
+  .flex-item.lg { width: 200px; height: 80px; }
+
+  /* ── justify-content tests ── */
+  .jc-left       { justify-content: left; }
+  .jc-right      { justify-content: right; }
+  .jc-center     { justify-content: center; }
+  .jc-flex-start { justify-content: flex-start; }
+  .jc-flex-end   { justify-content: flex-end; }
+  .jc-space-between { justify-content: space-between; }
+
+  /* ── align-content tests (needs flex-wrap: wrap) ── */
+  .ac-wrap       { flex-wrap: wrap; }
+  .ac-left       { align-content: flex-start; }
+  .ac-center     { align-content: center; }
+  .ac-flex-end   { align-content: flex-end; }
+  .ac-stretch    { align-content: stretch; }
+  .ac-space-between { align-content: space-between; }
+
+  /* ── align-items tests ── */
+  .ai-flex-start  { align-items: flex-start; }
+  .ai-flex-end    { align-items: flex-end; }
+  .ai-center      { align-items: center; }
+  .ai-stretch     { align-items: stretch; }
+  .ai-baseline    { align-items: baseline; }
+
+  /* ── align-self tests ── */
+  .as-flex-start  { align-self: flex-start; }
+  .as-flex-end    { align-self: flex-end; }
+  .as-center      { align-self: align-self; }
+  .as-stretch     { align-self: stretch; }
+
+  /* Column flex */
+  .col { flex-direction: column; }
+</style>
+</head>
+<body>
+<h1>Flexbox Alignment Test — Servo Fix Verification</h1>
+<p class="desc">Tests AlignFlags: LEFT, RIGHT, SELF_START, SELF_END, ANCHOR_CENTER fixes in flexbox/layout.rs.<br>
+Items should be visually in expected positions. Compare with reference browser.</p>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>justify-content: flex-start (BASELINE)</h2>
+<p class="desc">Items should be at LEFT edge.</p>
+<div class="flex-container jc-flex-start ai-flex-start">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>justify-content: flex-end</h2>
+<p class="desc">Items should be at RIGHT edge.</p>
+<div class="flex-container jc-flex-end ai-flex-start">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>justify-content: center</h2>
+<p class="desc">Items should be CENTERED horizontally.</p>
+<div class="flex-container jc-center ai-flex-start">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>justify-content: left (FIXED — was unhandled)</h2>
+<p class="desc">Items should be at LEFT edge (same as flex-start in horizontal flex).</p>
+<div class="flex-container jc-left ai-flex-start">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>justify-content: right (FIXED — was unhandled)</h2>
+<p class="desc">Items should be at RIGHT edge (same as flex-end in horizontal flex).</p>
+<div class="flex-container jc-right ai-flex-start">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>justify-content: space-between</h2>
+<p class="desc">First item LEFT, last item RIGHT, equal gaps between.</p>
+<div class="flex-container jc-space-between ai-flex-start">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item sm">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>align-items: flex-start</h2>
+<p class="desc">Items should be at TOP of container.</p>
+<div class="flex-container ai-flex-start">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>align-items: flex-end</h2>
+<p class="desc">Items should be at BOTTOM of container.</p>
+<div class="flex-container ai-flex-end">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>align-items: center</h2>
+<p class="desc">Items should be VERTICALLY CENTERED.</p>
+<div class="flex-container ai-center">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>align-items: stretch (DEFAULT)</h2>
+<p class="desc">Items should FILL the full container height.</p>
+<div class="flex-container ai-stretch">
+  <div class="flex-item" style="width:80px;">A</div>
+  <div class="flex-item" style="width:120px;">B</div>
+  <div class="flex-item" style="width:80px;">C</div>
+</div>
+
+<h2>align-items: baseline</h2>
+<p class="desc">Items should align by text baseline (note different font sizes).</p>
+<div class="flex-container ai-baseline">
+  <div class="flex-item sm" style="font-size:24px; height:auto;">A big</div>
+  <div class="flex-item md" style="font-size:11px; height:auto;">B small</div>
+  <div class="flex-item sm" style="font-size:16px; height:auto;">C mid</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>align-self: flex-start on individual item</h2>
+<p class="desc">Item B should be at TOP, others STRETCH.</p>
+<div class="flex-container ai-stretch">
+  <div class="flex-item" style="width:80px;">A stretch</div>
+  <div class="flex-item as-flex-start" style="width:120px; height:50px;">B top</div>
+  <div class="flex-item" style="width:80px;">C stretch</div>
+</div>
+
+<h2>align-self: flex-end on individual item</h2>
+<p class="desc">Item B should be at BOTTOM, others STRETCH.</p>
+<div class="flex-container ai-stretch">
+  <div class="flex-item" style="width:80px;">A stretch</div>
+  <div class="flex-item as-flex-end" style="width:120px; height:50px;">B bottom</div>
+  <div class="flex-item" style="width:80px;">C stretch</div>
+</div>
+
+<h2>align-self: center on individual item</h2>
+<p class="desc">Item B should be VERTICALLY CENTERED, others STRETCH.</p>
+<div class="flex-container ai-stretch">
+  <div class="flex-item" style="width:80px;">A stretch</div>
+  <div class="flex-item" style="width:120px; height:50px; align-self:center;">B center</div>
+  <div class="flex-item" style="width:80px;">C stretch</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>Column flex + align-items: flex-start</h2>
+<p class="desc">Column flex: items stack vertically, aligned LEFT.</p>
+<div class="flex-container col ai-flex-start" style="height: 200px; width: 300px;">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B (wider)</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>Column flex + align-items: center</h2>
+<p class="desc">Column flex: items HORIZONTALLY CENTERED.</p>
+<div class="flex-container col ai-center" style="height: 200px; width: 300px;">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B (wider)</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<h2>Column flex + align-items: flex-end</h2>
+<p class="desc">Column flex: items at RIGHT.</p>
+<div class="flex-container col ai-flex-end" style="height: 200px; width: 300px;">
+  <div class="flex-item sm">A</div>
+  <div class="flex-item md">B (wider)</div>
+  <div class="flex-item sm">C</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>flex-wrap: wrap + align-content: flex-start</h2>
+<p class="desc">Wrapped lines packed at TOP.</p>
+<div class="flex-container ac-wrap ac-left" style="height: 200px;">
+  <div class="flex-item sm">A</div><div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div><div class="flex-item md">D</div>
+  <div class="flex-item sm">E</div><div class="flex-item md">F</div>
+</div>
+
+<h2>flex-wrap: wrap + align-content: center</h2>
+<p class="desc">Wrapped lines packed in MIDDLE.</p>
+<div class="flex-container ac-wrap ac-center" style="height: 200px;">
+  <div class="flex-item sm">A</div><div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div><div class="flex-item md">D</div>
+</div>
+
+<h2>flex-wrap: wrap + align-content: space-between</h2>
+<p class="desc">First wrapped line at top, last at bottom, equal space between.</p>
+<div class="flex-container ac-wrap ac-space-between" style="height: 200px;">
+  <div class="flex-item sm">A</div><div class="flex-item md">B</div>
+  <div class="flex-item sm">C</div><div class="flex-item md">D</div>
+</div>
+
+<hr style="border-color:#444; margin-top:24px;">
+<p style="font-size:11px; color:#666;">
+  Load in Aurora with Servo engine to verify. Compare same page in Chrome/Firefox for reference.
+</p>
+</body>
+</html>
