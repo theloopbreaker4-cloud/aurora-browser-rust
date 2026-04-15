@@ -4,8 +4,8 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
     height: 100vh;
-    background: #111a2e;
-    color: #e0e0e0;
+    background: #1a2332;
+    color: #c8d8e8;
     font-family: 'Segoe UI', sans-serif;
     display: flex;
     flex-direction: column;
@@ -14,210 +14,301 @@ body {
     -webkit-user-select: none;
 }
 
-/* ===== TAB BAR ===== */
-.tab-bar {
+/* ===== TITLEBAR ROW: tabs + window controls ===== */
+.titlebar {
     display: flex;
     align-items: flex-end;
-    padding: 0 8px;
-    height: 48px;
-    background: linear-gradient(180deg, #080e1c 0%, #0e1628 100%);
-    border-bottom: 1px solid #1a2540;
+    height: 42px;
+    background: #131c28;
     flex-shrink: 0;
     position: relative;
+}
+
+.tabs-left {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+    padding: 0 6px;
 }
 
 .tabs-container {
     display: flex;
     align-items: flex-end;
-    justify-content: flex-start;
     gap: 2px;
     flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
 }
 
-.tabs-left {
-    display: flex;
-    align-items: flex-end;
-    gap: 4px;
-    flex: 1;
-    min-width: 0;
-}
-
 .tab {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 12px;
-    height: 40px;
-    background: rgba(20,30,50,0.6);
-    border: 1px solid rgba(60,80,120,0.2);
+    gap: 7px;
+    padding: 0 10px;
+    height: 34px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(100,180,180,0.08);
     border-bottom: none;
-    border-radius: 12px 12px 0 0;
-    color: #8898b0;
-    font-size: 13px;
-    font-weight: 400;
+    border-radius: 8px 8px 0 0;
+    color: #7a9aaa;
+    font-size: 12px;
     cursor: pointer;
     min-width: 40px;
-    max-width: 220px;
-    flex: 1 1 180px;
+    max-width: 200px;
+    flex: 1 1 160px;
     overflow: hidden;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition: background 0.15s, color 0.15s;
 }
 
 .tab.active {
-    background: rgba(30,45,70,0.8);
-    color: #e8f0ff;
-    border-color: rgba(80,110,160,0.3);
+    background: #1a2e3e;
+    color: #a8d8d8;
+    border-color: rgba(80,160,160,0.2);
 }
 
-.tab:hover:not(.active) { background: rgba(25,38,60,0.7); }
+.tab:hover:not(.active) {
+    background: rgba(255,255,255,0.07);
+    color: #9abaca;
+}
 
 .tab-favicon {
-    width: 20px; height: 20px;
+    width: 16px; height: 16px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
 }
-.tab-favicon svg { width: 18px; height: 18px; }
+.tab-favicon svg { width: 14px; height: 14px; }
+.tab-favicon img { width: 14px; height: 14px; border-radius: 2px; }
 
 .tab-title {
     flex: 1;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-size: 13px; line-height: 40px;
+    font-size: 12px;
 }
 
 .tab-close {
-    width: 20px; height: 20px;
+    width: 18px; height: 18px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 5px; cursor: pointer;
-    opacity: 0; transition: opacity 0.1s, background 0.1s;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.1s, background 0.1s;
     flex-shrink: 0;
 }
-.tab-close svg { width: 10px; height: 10px; stroke: #667; stroke-width: 2; stroke-linecap: round; }
+.tab-close svg { width: 9px; height: 9px; stroke: #6a8a90; stroke-width: 2; stroke-linecap: round; }
 .tab:hover .tab-close { opacity: 1; }
-.tab-close:hover { background: rgba(255,60,60,0.3); }
-.tab-close:hover svg { stroke: #ff6666; }
+.tab-close:hover { background: rgba(200,80,80,0.25); }
+.tab-close:hover svg { stroke: #e08080; }
 
 .new-tab-btn {
-    width: 36px; height: 36px;
+    width: 28px; height: 28px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 10px; cursor: pointer;
+    border-radius: 6px;
+    cursor: pointer;
     transition: background 0.15s;
-    margin: 0 4px 2px;
+    margin-bottom: 3px;
     flex-shrink: 0;
 }
-.new-tab-btn svg { width: 16px; height: 16px; stroke: #667; stroke-width: 2; stroke-linecap: round; }
-.new-tab-btn:hover { background: rgba(100,140,200,0.15); }
-.new-tab-btn:hover svg { stroke: #a0b8d0; }
+.new-tab-btn svg { width: 13px; height: 13px; stroke: #4a7a80; stroke-width: 2; stroke-linecap: round; }
+.new-tab-btn:hover { background: rgba(80,160,160,0.12); }
+.new-tab-btn:hover svg { stroke: #70b0b0; }
+
+/* ===== WINDOW CONTROLS ===== */
+.win-controls {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    flex-shrink: 0;
+}
+
+.win-btn {
+    width: 46px; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+}
+.win-btn svg { width: 11px; height: 11px; stroke: #4a7080; fill: none; stroke-width: 1.5; stroke-linecap: round; transition: stroke 0.12s, opacity 0.12s; }
+.win-btn:hover svg { stroke: #c0e0e0; opacity: 1; }
+.win-btn:hover { background: rgba(80,160,160,0.12); }
+.win-btn:active { background: rgba(80,160,160,0.22); }
+
+/* Minimize — yellow tint on hover */
+.win-btn.min-btn:hover { background: rgba(200,180,60,0.15); }
+.win-btn.min-btn:hover svg { stroke: #e0c060; }
+
+/* Maximize — green tint on hover */
+.win-btn.max-btn:hover { background: rgba(60,180,100,0.15); }
+.win-btn.max-btn:hover svg { stroke: #60c080; }
+
+/* Close — red on hover */
+.win-btn.close-btn:hover { background: rgba(200,60,60,0.75); }
+.win-btn.close-btn:hover svg { stroke: #fff; }
+.win-btn.close-btn:active { background: rgba(180,40,40,0.9); }
+
+/* Unfocused window — dim the controls */
+body[data-focused='false'] .win-btn svg { opacity: 0.35; }
 
 /* ===== NAV BAR ===== */
 .nav-bar {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    gap: 6px;
-    background: linear-gradient(180deg, #0e1628 0%, #111a2e 100%);
+    padding: 4px 8px;
+    gap: 2px;
+    background: #1a2332;
+    border-bottom: 1px solid rgba(60,120,120,0.15);
     flex-shrink: 0;
 }
 
 .nav-group {
-    display: flex; align-items: center; gap: 6px;
+    display: flex; align-items: center; gap: 1px;
+    flex-shrink: 0;
 }
 
 .nav-btn {
-    width: 40px; height: 40px;
+    width: 30px; height: 30px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 10px; border: none; background: transparent;
+    border-radius: 7px; border: none; background: transparent;
     cursor: pointer; transition: background 0.12s;
+    flex-shrink: 0;
 }
-.nav-btn svg { width: 24px; height: 24px; stroke: #7a8aa5; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.nav-btn:hover svg { stroke: #b0c0d8; }
-.nav-btn:hover { background: rgba(100,140,200,0.12); }
+.nav-btn svg { width: 20px; height: 20px; stroke: #5a8090; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nav-btn:hover svg { stroke: #90c0c0; }
+.nav-btn:hover { background: rgba(80,160,160,0.1); }
 .nav-btn:active { transform: scale(0.93); }
 .nav-btn .stop-icon { display: none; }
 .nav-btn.loading .reload-icon { display: none; }
 .nav-btn.loading .stop-icon { display: block; }
-
 @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
 .nav-btn.loading svg { animation: spin 0.8s linear infinite; }
 
+/* Center group: nav buttons + address bar together, centered */
+.nav-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Small spacer between last nav-btn and address-wrap left edge,
+   and between address-wrap right edge and toolbar-right */
+.nav-center .address-wrap {
+    margin-left: 2px;
+}
+
 .address-wrap {
-    flex: 0 1 600px;
+    flex: 0 1 420px;
     display: flex; align-items: center;
-    height: 42px;
-    background: rgba(8,14,28,0.9);
-    border: 1px solid rgba(60,80,120,0.25);
-    border-radius: 5px;
-    padding: 0 18px;
-    gap: 12px;
+    height: 36px;
+    background: #111820;
+    border: 1px solid rgba(60,120,120,0.2);
+    border-radius: 6px;
+    padding: 0 12px;
+    gap: 8px;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 .address-wrap:focus-within {
-    border-color: rgba(80,120,200,0.4);
-    box-shadow: 0 0 12px rgba(60,120,200,0.12);
+    border-color: rgba(60,160,160,0.4);
+    box-shadow: 0 0 0 2px rgba(60,160,160,0.08);
 }
 
 .address-icon { flex-shrink: 0; display: flex; align-items: center; }
-.address-icon svg { width: 18px; height: 18px; stroke: #5a6a80; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.address-icon svg { width: 14px; height: 14px; stroke: #3a6070; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .address-bar {
     flex: 1; height: 100%;
     background: transparent; border: none;
-    color: #c0d0e0; font-size: 15px; outline: none;
+    color: #a8c8c8; font-size: 13px; outline: none;
+    text-align: center;
 }
-.address-bar::placeholder { color: #4a5a70; }
+.address-bar:focus { text-align: left; }
+.address-bar::placeholder { color: #3a5878; font-size: 12px; letter-spacing: 0.3px; }
 
 .toolbar-right {
-    display: flex; align-items: center; gap: 4px;
+    display: flex; align-items: center; gap: 2px;
+    flex-shrink: 0;
 }
 
 .toolbar-btn {
-    width: 40px; height: 40px;
+    width: 36px; height: 36px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 10px; cursor: pointer;
+    border-radius: 8px; cursor: pointer;
     transition: background 0.12s;
 }
-.toolbar-btn svg { width: 22px; height: 22px; stroke: #7a8aa5; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.toolbar-btn:hover svg { stroke: #b0c0d8; }
-.toolbar-btn:hover { background: rgba(100,140,200,0.12); }
+.toolbar-btn svg { width: 21px; height: 21px; stroke: #5a8090; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.toolbar-btn:hover svg { stroke: #90c0c0; }
+.toolbar-btn:hover { background: rgba(80,160,160,0.1); }
+
+/* ===== ENGINE TOGGLE ===== */
+.engine-btn { position: relative; }
+.engine-btn.servo svg { stroke: #40c0a0; }
+.engine-btn.servo { background: rgba(40,160,130,0.1); }
+.engine-label {
+    position: absolute;
+    top: -6px; right: -4px;
+    font-size: 8px; font-weight: 700;
+    color: #40c0a0;
+    letter-spacing: -0.3px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.engine-btn.servo .engine-label { opacity: 1; }
+
+/* ===== TOAST ===== */
+.toast {
+    position: fixed;
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #1a2e3e;
+    border: 1px solid rgba(60,160,160,0.3);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 12px; color: #80c0c0;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+}
+.toast.show { opacity: 1; }
 
 /* ===== FIND BAR ===== */
 .find-bar {
     display: none;
     align-items: center;
     padding: 0 12px;
-    height: 36px;
-    background: #0d1525;
-    border-bottom: 1px solid rgba(60,80,120,0.2);
+    height: 34px;
+    background: #141e2a;
+    border-bottom: 1px solid rgba(60,120,120,0.15);
     flex-shrink: 0;
     gap: 8px;
 }
 .find-bar.open { display: flex; }
 .find-input {
-    flex: 0 1 260px; height: 26px;
-    background: rgba(8,14,28,0.9); border: 1px solid rgba(60,80,120,0.3);
-    border-radius: 5px; color: #c0d0e0; font-size: 13px;
-    padding: 0 10px; outline: none;
+    flex: 0 1 220px; height: 24px;
+    background: #111820; border: 1px solid rgba(60,120,120,0.25);
+    border-radius: 4px; color: #a8c8c8; font-size: 12px;
+    padding: 0 8px; outline: none;
 }
-.find-input:focus { border-color: rgba(0,255,170,0.3); }
-.find-count { font-size: 12px; color: #5a6a80; min-width: 60px; }
+.find-input:focus { border-color: rgba(60,160,160,0.4); }
+.find-count { font-size: 11px; color: #3a6070; min-width: 50px; }
 .find-btn {
-    width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-    border-radius: 5px; cursor: pointer; transition: background 0.1s;
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; cursor: pointer; transition: background 0.1s;
 }
-.find-btn svg { width: 14px; height: 14px; stroke: #7a8aa5; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.find-btn:hover { background: rgba(100,140,200,0.15); }
-.find-btn:hover svg { stroke: #b0c0d8; }
+.find-btn svg { width: 12px; height: 12px; stroke: #5a8090; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.find-btn:hover { background: rgba(80,160,160,0.12); }
+.find-btn:hover svg { stroke: #90c0c0; }
 .find-close { margin-left: auto; }
 
 /* ===== ZOOM INDICATOR ===== */
 .zoom-indicator {
     display: none;
     position: fixed; bottom: 8px; right: 12px;
-    background: rgba(10,16,30,0.9); border: 1px solid rgba(60,80,120,0.3);
-    border-radius: 8px; padding: 4px 10px;
-    font-size: 12px; color: #7fffd4;
+    background: rgba(16,24,36,0.92); border: 1px solid rgba(60,120,120,0.25);
+    border-radius: 6px; padding: 3px 10px;
+    font-size: 12px; color: #70b0b0;
     z-index: 9999; pointer-events: none;
     transition: opacity 0.3s;
 }
@@ -226,29 +317,29 @@ body {
 .bookmark-bar {
     display: flex;
     align-items: center;
-    padding: 0 12px;
-    height: 34px;
-    background: #0d1525;
-    border-bottom: 1px solid rgba(60,80,120,0.2);
+    padding: 0 10px;
+    height: 30px;
+    background: #161f2c;
+    border-bottom: 1px solid rgba(60,120,120,0.12);
     flex-shrink: 0;
     gap: 2px;
     overflow: hidden;
 }
 .bm-item {
-    display: flex; align-items: center; gap: 5px;
-    padding: 0 10px; height: 24px;
-    border-radius: 6px; cursor: pointer;
-    font-size: 12px; color: #8898b0;
-    white-space: nowrap; max-width: 160px;
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 8px; height: 22px;
+    border-radius: 5px; cursor: pointer;
+    font-size: 11px; color: #6a9090;
+    white-space: nowrap; max-width: 150px;
     overflow: hidden; text-overflow: ellipsis;
     transition: background 0.12s, color 0.12s;
     flex-shrink: 0;
 }
-.bm-item:hover { background: rgba(100,140,200,0.12); color: #c0d0e0; }
-.bm-item img { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
-.bm-favicon { width: 14px; height: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.bm-favicon svg { width: 14px; height: 14px; }
-.bm-sep { width: 1px; height: 18px; background: rgba(60,80,120,0.25); margin: 0 4px; flex-shrink: 0; }
+.bm-item:hover { background: rgba(80,160,160,0.1); color: #90c0c0; }
+.bm-item img { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+.bm-favicon { width: 12px; height: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.bm-favicon svg { width: 12px; height: 12px; }
+.bm-sep { width: 1px; height: 16px; background: rgba(60,120,120,0.18); margin: 0 3px; flex-shrink: 0; }
 
 /* ===== MENU OVERLAY ===== */
 .menu-overlay {
@@ -261,94 +352,96 @@ body {
 
 .menu-panel {
     position: fixed;
-    top: 48px; right: 16px;
-    width: 320px;
-    max-height: calc(100vh - 60px);
-    background: #141c30;
-    border: 1px solid rgba(60,80,120,0.3);
-    border-radius: 12px;
+    top: 80px; right: 12px;
+    width: 300px;
+    max-height: calc(100vh - 90px);
+    background: #141e2a;
+    border: 1px solid rgba(60,120,120,0.2);
+    border-radius: 10px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     overflow-y: auto;
     z-index: 1000;
-    padding: 8px;
+    padding: 6px;
 }
 
 .menu-section {
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(60,80,120,0.15);
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(60,120,120,0.1);
 }
 .menu-section:last-child { border-bottom: none; }
 
 .menu-section-title {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px 6px;
-    font-size: 13px; font-weight: 600;
-    color: #8898b0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px 5px;
+    font-size: 11px; font-weight: 600;
+    color: #4a7a80;
     letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
-.menu-section-title svg { width: 18px; height: 18px; stroke: #6a8aaa; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.menu-section-title svg { width: 14px; height: 14px; stroke: #4a7a80; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .menu-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 12px 8px 38px;
-    font-size: 13px; color: #a0b0c0;
-    border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px 7px 34px;
+    font-size: 12px; color: #7a9aaa;
+    border-radius: 6px; cursor: pointer;
     transition: background 0.1s, color 0.1s;
 }
 .menu-item:hover {
-    background: rgba(0,255,170,0.06);
-    color: #d0e0f0;
+    background: rgba(60,160,160,0.08);
+    color: #a8c8c8;
 }
-.menu-item svg { width: 16px; height: 16px; stroke: #6a7a90; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-.menu-item:hover svg { stroke: #a0b8d0; }
+.menu-item svg { width: 14px; height: 14px; stroke: #4a7a80; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.menu-item:hover svg { stroke: #70b0b0; }
 </style>
 </head>
 <body>
 
-<!-- Tab Bar -->
-<div class="tab-bar" id="tabBar">
+<!-- Titlebar: tabs + window controls -->
+<div class="titlebar" id="titlebar" onmousedown="titlebarMouseDown(event)">
     <div class="tabs-left">
-        <div class="tabs-container" id="tabsContainer">
-            <div class="tab active">
-                <div class="tab-favicon"><svg viewBox="0 0 16 16" fill="none"><path d="M3,9 Q5,5 8,8 Q11,5 13,9" stroke="#7fffd4" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-                <span class="tab-title">New Tab</span>
-                <span class="tab-close"><svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></span>
-            </div>
+        <div class="tabs-container" id="tabsContainer"></div>
+        <div class="new-tab-btn" onclick="newTab()" title="New Tab (Ctrl+T)">
+            <svg viewBox="0 0 13 13"><line x1="6.5" y1="1" x2="6.5" y2="12"/><line x1="1" y1="6.5" x2="12" y2="6.5"/></svg>
         </div>
-        <div class="new-tab-btn" onclick="newTab()">
-            <svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>
+    </div>
+    <div class="win-controls">
+        <div class="win-btn min-btn" onclick="ipcSend('minimize')" title="Minimize">
+            <svg viewBox="0 0 11 11"><line x1="1" y1="5.5" x2="10" y2="5.5"/></svg>
+        </div>
+        <div class="win-btn max-btn" id="maxBtn" onclick="ipcSend('maximize')" title="Maximize/Restore">
+            <svg viewBox="0 0 11 11"><rect x="1" y="1" width="9" height="9" rx="1"/></svg>
+        </div>
+        <div class="win-btn close-btn" onclick="ipcSend('close_window')" title="Close">
+            <svg viewBox="0 0 11 11"><line x1="1" y1="1" x2="10" y2="10"/><line x1="10" y1="1" x2="1" y2="10"/></svg>
         </div>
     </div>
 </div>
 
 <!-- Nav Bar -->
 <div class="nav-bar">
-    <div class="nav-group">
-        <div class="nav-btn" onclick="ipcSend('back')" title="Back">
+    <div class="nav-center">
+        <div class="nav-btn" onclick="ipcSend('back')" title="Back (Alt+Left)">
             <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
         </div>
-        <div class="nav-btn" onclick="ipcSend('forward')" title="Forward">
+        <div class="nav-btn" onclick="ipcSend('forward')" title="Forward (Alt+Right)">
             <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
         </div>
-        <div class="nav-btn" id="reloadBtn" onclick="toggleReload()" title="Reload">
+        <div class="nav-btn" id="reloadBtn" onclick="toggleReload()" title="Reload (F5)">
             <svg class="reload-icon" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             <svg class="stop-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </div>
-    </div>
 
-    <div class="address-wrap">
-        <div class="address-icon">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <div class="address-wrap">
+            <div class="address-icon">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </div>
+            <input class="address-bar" id="addressBar" type="text"
+                   placeholder=""
+                   onkeydown="if(event.key==='Enter') navigate(this.value)">
         </div>
-        <input class="address-bar" id="addressBar" type="text"
-               placeholder="Search or enter address..."
-               onkeydown="if(event.key==='Enter') navigate(this.value)">
-    </div>
 
-    <div class="toolbar-right">
-        <div class="toolbar-btn" title="Extensions">
-            <svg viewBox="0 0 24 24"><path d="M20 7h-3V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3H8a1 1 0 0 0-1 1v3h3a2 2 0 0 1 0 4H7v3a1 1 0 0 0 1 1h3v-3a2 2 0 0 1 4 0v3h3a1 1 0 0 0 1-1v-3h-3a2 2 0 0 1 0-4h3V8a1 1 0 0 0-1-1z"/></svg>
-        </div>
+        <div class="toolbar-right">
         <div class="toolbar-btn" title="Bookmarks">
             <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
         </div>
@@ -359,6 +452,7 @@ body {
             <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </div>
     </div>
+    </div>
 </div>
 
 <!-- Bookmark Bar -->
@@ -366,31 +460,28 @@ body {
 
 <!-- Find Bar -->
 <div class="find-bar" id="findBar">
-    <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#5a6a80;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#3a6070;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
     <input class="find-input" id="findInput" type="text" placeholder="Find on page..."
            oninput="doFind(this.value)"
            onkeydown="onFindKey(event)">
     <span class="find-count" id="findCount"></span>
-    <div class="find-btn" onclick="findNext()" title="Next (Enter)">
-        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-    <div class="find-btn" onclick="findPrev()" title="Previous (Shift+Enter)">
-        <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
-    </div>
-    <div class="find-btn find-close" onclick="closeFindBar()" title="Close (Esc)">
-        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </div>
+    <div class="find-btn" onclick="findNext()" title="Next"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="find-btn" onclick="findPrev()" title="Previous"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div>
+    <div class="find-btn find-close" onclick="closeFindBar()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
 </div>
 
 <!-- Zoom Indicator -->
 <div class="zoom-indicator" id="zoomIndicator"></div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
 
 <!-- Menu Panel -->
 <div class="menu-overlay" id="menuOverlay" onclick="closeMenu()">
     <div class="menu-panel" id="menuPanel" onclick="event.stopPropagation()">
         <div class="menu-section">
             <div class="menu-section-title"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span data-i18n="bookmarks">Bookmarks</span></div>
-            <div class="menu-item" onclick="menuAction('add_bookmark')"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span data-i18n="add_bookmark">Add Page to Bookmarks</span></div>
+            <div class="menu-item" onclick="menuAction('add_bookmark')"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span data-i18n="add_bookmark">Add to Bookmarks</span></div>
             <div class="menu-item" onclick="menuAction('bookmark_manager')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span data-i18n="bookmark_manager">Bookmark Manager</span></div>
         </div>
         <div class="menu-section">
@@ -403,22 +494,14 @@ body {
             <div class="menu-item" onclick="menuAction('all_downloads')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span data-i18n="all_downloads">All Downloads</span></div>
         </div>
         <div class="menu-section">
-            <div class="menu-section-title"><svg viewBox="0 0 24 24"><path d="M20 7h-3V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3H8a1 1 0 0 0-1 1v3h3a2 2 0 0 1 0 4H7v3a1 1 0 0 0 1 1h3v-3a2 2 0 0 1 4 0v3h3a1 1 0 0 0 1-1v-3h-3a2 2 0 0 1 0-4h3V8a1 1 0 0 0-1-1z"/></svg><span data-i18n="extensions">Extensions</span></div>
-            <div class="menu-item" onclick="menuAction('extension_manager')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg><span data-i18n="extension_manager">Extension Manager</span></div>
-        </div>
-        <div class="menu-section">
             <div class="menu-section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-i18n="settings">Settings</span></div>
             <div class="menu-item" onclick="menuAction('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg><span data-i18n="general">General</span></div>
             <div class="menu-item" onclick="menuAction('privacy')"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span data-i18n="privacy">Privacy</span></div>
             <div class="menu-item" onclick="closeMenu();ipcSend('devtools')"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span>Developer Tools (F12)</span></div>
-            <div class="menu-item" onclick="closeMenu();ipcSend('viewsource')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg><span>View Page Source</span></div>
+            <div class="menu-item" onclick="closeMenu();ipcSend('viewsource')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>View Page Source</span></div>
         </div>
         <div class="menu-section">
-            <div class="menu-section-title"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="incognito">Incognito Mode</span></div>
-            <div class="menu-item" onclick="menuAction('incognito')"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg><span data-i18n="open_incognito">Open Incognito Window</span></div>
-        </div>
-        <div class="menu-section">
-            <div class="menu-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg><span data-i18n="tab_management">Tab Management</span></div>
+            <div class="menu-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg><span data-i18n="tab_management">Tabs</span></div>
             <div class="menu-item" onclick="newTab(); closeMenu()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="new_tab">New Tab</span></div>
             <div class="menu-item" onclick="menuAction('close_all')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span data-i18n="close_all_tabs">Close All Tabs</span></div>
         </div>
@@ -431,12 +514,31 @@ let activeTab = 0;
 
 function ipcSend(msg) { window.ipc.postMessage(msg); }
 
+let _titlebarLastClick = 0;
+function titlebarMouseDown(e) {
+    if (e.button !== 0) return;
+    const t = e.target;
+    if (t.closest('.tab') || t.closest('.new-tab-btn') || t.closest('.win-controls')) return;
+    const now = Date.now();
+    if (now - _titlebarLastClick < 400) {
+        // Double-click → maximize/restore
+        ipcSend('maximize');
+        _titlebarLastClick = 0;
+    } else {
+        _titlebarLastClick = now;
+        ipcSend('drag_window');
+    }
+}
+
+
 function navigate(input) {
     let url = input.trim();
     if (!url) return;
-    if (!url.includes('.') && !url.startsWith('http') && !url.startsWith('aurora://'))
+    if (url.startsWith('file://') || url.startsWith('aurora://')) {
+        // pass through as-is
+    } else if (!url.includes('.') && !url.startsWith('http'))
         url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
-    else if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('aurora://'))
+    else if (!url.startsWith('http://') && !url.startsWith('https://'))
         url = 'https://' + url;
     tabs[activeTab].url = url;
     tabs[activeTab].isPortal = (url === 'aurora://newtab');
@@ -471,24 +573,24 @@ function switchTab(i) {
 
 function updateTabs() {
     const container = document.getElementById('tabsContainer');
-    container.querySelectorAll('.tab').forEach(t => t.remove());
+    container.innerHTML = '';
 
-    const favIcons = {
-        'youtube.com': '<svg viewBox="0 0 16 16" width="14" height="14"><rect x="1" y="3" width="14" height="10" rx="3" fill="#ff0000"/><polygon points="7,5 11,8 7,11" fill="#fff"/></svg>',
-        'google.com': '<svg viewBox="0 0 16 16" width="14" height="14"><text x="4" y="13" font-size="12" font-weight="bold" fill="#4285f4" font-family="Arial">G</text></svg>',
-        'wikipedia.org': '<svg viewBox="0 0 16 16" width="14" height="14"><text x="2" y="13" font-size="13" font-weight="bold" fill="#fff" font-family="serif">W</text></svg>',
-        'github.com': '<svg viewBox="0 0 16 16" width="14" height="14" fill="#ccc"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33C3.78 14.4 3.3 12.85 3.3 12.85c-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.22 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.22 2.2.82A7.65 7.65 0 018 4.07c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.74.54 1.49v2.2c0 .21.15.46.55.38A8 8 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>',
-    };
-    const auroraFav = '<svg viewBox="0 0 16 16" fill="none"><defs><linearGradient id="tf" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00ffaa"/><stop offset="100%" stop-color="#00aaff"/></linearGradient></defs><path d="M8,2 C6,2 4,4 4,6 C4,8 5,9 7,10 C5,9 3,10 2,12 C3,13 5,13 7,12 C6,13 7,15 9,14 C11,13 12,11 12,9 C14,10 14,8 13,6 C12,4 10,2 8,2Z" fill="url(#tf)" opacity="0.9"/><circle cx="7" cy="5" r="1" fill="#fff" opacity="0.8"/></svg>';
+    const auroraFav = (typeof AURORA_FAVICON !== 'undefined')
+        ? `<img src="${AURORA_FAVICON}" width="14" height="14" style="border-radius:3px">`
+        : '<svg viewBox="0 0 16 16" fill="none"><defs><linearGradient id="tf" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#40b0b0"/><stop offset="100%" stop-color="#2080a0"/></linearGradient></defs><path d="M8,2 C6,2 4,4 4,6 C4,8 5,9 7,10 C5,9 3,10 2,12 C3,13 5,13 7,12 C6,13 7,15 9,14 C11,13 12,11 12,9 C14,10 14,8 13,6 C12,4 10,2 8,2Z" fill="url(#tf)" opacity="0.9"/><circle cx="7" cy="5" r="1" fill="#fff" opacity="0.7"/></svg>';
+
+    function getFaviconHtml(url) {
+        if (!url || url.startsWith('aurora://') || url.startsWith('data:')) return auroraFav;
+        try {
+            const domain = new URL(url).hostname;
+            return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=16" width="14" height="14" style="border-radius:2px" onerror="this.style.display='none'">`;
+        } catch { return auroraFav; }
+    }
 
     tabs.forEach((tab, i) => {
         const el = document.createElement('div');
         el.className = 'tab' + (i === activeTab ? ' active' : '');
-        let fav = auroraFav;
-        for (const [domain, icon] of Object.entries(favIcons)) {
-            if (tab.url.includes(domain)) { fav = icon; break; }
-        }
-        el.innerHTML = `<div class="tab-favicon">${fav}</div><span class="tab-title">${tab.title}</span><span class="tab-close"><svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></span>`;
+        el.innerHTML = `<div class="tab-favicon">${getFaviconHtml(tab.url)}</div><span class="tab-title">${tab.title}</span><span class="tab-close"><svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></span>`;
         el.querySelector('.tab-title').onclick = () => switchTab(i);
         el.querySelector('.tab-close').onclick = (e) => { e.stopPropagation(); closeTab(i); };
         container.appendChild(el);
@@ -496,12 +598,17 @@ function updateTabs() {
 }
 
 function onUrlChanged(url) {
-    if (url && url !== 'aurora://newtab' && !url.startsWith('data:')) {
+    const bar = document.getElementById('addressBar');
+    if (url && url !== 'aurora://newtab' && url !== 'about:blank' && !url.startsWith('data:')) {
         tabs[activeTab].url = url;
         tabs[activeTab].title = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
         tabs[activeTab].isPortal = false;
-        document.getElementById('addressBar').value = url;
+        bar.value = url;
+        bar.placeholder = '';
         updateTabs();
+    } else {
+        bar.value = '';
+        bar.placeholder = 'Search or enter address';
     }
 }
 
@@ -531,30 +638,15 @@ function onLoadEnd() { setLoading(false); }
     const bar = document.getElementById('bookmarkBar');
     if (!bar) return;
     const bm = (typeof AURORA_BOOKMARKS !== 'undefined') ? AURORA_BOOKMARKS : {};
-    const favicons = {
-        'youtube.com': '<svg viewBox="0 0 14 14"><rect x="1" y="2" width="12" height="10" rx="2.5" fill="#ff0000"/><polygon points="6,4.5 9.5,7 6,9.5" fill="#fff"/></svg>',
-        'google.com':  '<svg viewBox="0 0 14 14"><text x="2" y="11" font-size="11" font-weight="bold" fill="#4285f4" font-family="Arial">G</text></svg>',
-        'wikipedia.org': '<svg viewBox="0 0 14 14"><text x="1" y="11" font-size="12" font-weight="bold" fill="#ccc" font-family="serif">W</text></svg>',
-        'github.com':  '<svg viewBox="0 0 14 14" fill="#aaa"><path d="M7 0C3.13 0 0 3.13 0 7c0 3.09 2 5.71 4.79 6.64.35.06.48-.15.48-.33v-1.16c-1.95.42-2.36-.94-2.36-.94-.32-.8-.77-1.02-.77-1.02-.63-.43.05-.42.05-.42.7.05 1.07.72 1.07.72.62 1.06 1.63.75 2.03.57.06-.45.24-.75.44-.93-1.55-.18-3.18-.78-3.18-3.46 0-.76.27-1.39.72-1.88-.07-.18-.31-.89.07-1.85 0 0 .58-.19 1.92.71A6.7 6.7 0 017 3.56c.59 0 1.19.08 1.75.23 1.34-.9 1.92-.71 1.92-.71.38.96.14 1.67.07 1.85.45.49.72 1.12.72 1.88 0 2.69-1.64 3.28-3.2 3.46.25.22.47.65.47 1.3v1.93c0 .19.13.41.49.34A7 7 0 0014 7c0-3.87-3.13-7-7-7z"/></svg>',
-        'startpage.com': '<svg viewBox="0 0 14 14"><text x="2" y="11" font-size="11" font-weight="bold" fill="#00aaff" font-family="Arial">S</text></svg>',
-    };
     function getFavicon(url) {
-        for (const [domain, icon] of Object.entries(favicons)) {
-            if (url.includes(domain)) return icon;
-        }
-        // letter fallback
         try {
-            const host = new URL(url).hostname.replace('www.','');
-            return `<svg viewBox="0 0 14 14"><text x="2" y="11" font-size="11" font-weight="bold" fill="#7fffd4" font-family="Arial">${host[0].toUpperCase()}</text></svg>`;
+            const domain = new URL(url).hostname;
+            return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=16" width="12" height="12" style="border-radius:2px" onerror="this.style.display='none'">`;
         } catch { return ''; }
     }
     let first = true;
     for (const [title, url] of Object.entries(bm)) {
-        if (!first) {
-            const sep = document.createElement('div');
-            sep.className = 'bm-sep';
-            bar.appendChild(sep);
-        }
+        if (!first) { const sep = document.createElement('div'); sep.className = 'bm-sep'; bar.appendChild(sep); }
         first = false;
         const item = document.createElement('div');
         item.className = 'bm-item';
@@ -574,8 +666,7 @@ function setZoom(level) {
     ipcSend('zoom:' + currentZoom);
     const ind = document.getElementById('zoomIndicator');
     ind.textContent = Math.round(currentZoom * 100) + '%';
-    ind.style.display = 'block';
-    ind.style.opacity = '1';
+    ind.style.display = 'block'; ind.style.opacity = '1';
     clearTimeout(zoomTimer);
     zoomTimer = setTimeout(() => { ind.style.opacity = '0'; setTimeout(() => { ind.style.display = 'none'; }, 300); }, 1500);
 }
@@ -628,5 +719,45 @@ document.addEventListener('keydown', (e) => {
         });
     } catch(e) {}
 })();
+
+// ===== ENGINE TOGGLE =====
+let currentEngine = (typeof AURORA_CONFIG !== 'undefined' && AURORA_CONFIG.engine) ? AURORA_CONFIG.engine : 'webview2';
+
+function updateEngineBtn() {
+    const btn = document.getElementById('engineBtn');
+    if (!btn) return;
+    if (currentEngine === 'servo') {
+        btn.classList.add('servo');
+        btn.title = 'Engine: Servo — click to switch to WebView2';
+    } else {
+        btn.classList.remove('servo');
+        btn.title = 'Engine: WebView2 — click to switch to Servo';
+    }
+}
+
+function toggleEngine() {
+    currentEngine = currentEngine === 'servo' ? 'webview2' : 'servo';
+    ipcSend('switch_engine:' + currentEngine);
+    updateEngineBtn();
+    showToast(currentEngine === 'servo'
+        ? 'Servo engine enabled — restart to apply'
+        : 'WebView2 engine enabled — restart to apply');
+}
+
+function onEngineChanged(engine) {
+    currentEngine = engine;
+    updateEngineBtn();
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Init
+updateTabs();
+updateEngineBtn();
 </script>
 </body></html>

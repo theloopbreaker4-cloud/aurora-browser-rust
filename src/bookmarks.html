@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Aurora Bookmarks</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#030610;color:#d0dcea;font-family:'Segoe UI',sans-serif;min-height:100vh;padding:40px 56px}
+.page{max-width:900px;margin:0 auto}
+.page-header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.page-header svg{width:26px;height:26px;stroke:#00ffaa;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+h1{font-size:28px;font-weight:600;color:#7fffd4;letter-spacing:0.5px}
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.search-wrap{
+    flex:1;display:flex;align-items:center;gap:10px;
+    background:rgba(10,18,32,0.9);border:1px solid rgba(60,80,120,0.3);
+    border-radius:10px;padding:0 14px;height:38px;transition:border-color 0.2s;
+}
+.search-wrap:focus-within{border-color:rgba(0,255,170,0.3)}
+.search-wrap svg{width:14px;height:14px;stroke:#3a5a72;fill:none;stroke-width:2;flex-shrink:0}
+.search-input{flex:1;background:transparent;border:none;color:#b0c8e0;font-size:13px;outline:none}
+.search-input::placeholder{color:#2a3a50}
+.btn-add{
+    background:rgba(0,80,50,0.2);color:#7fffd4;
+    border:1px solid rgba(0,255,170,0.25);
+    border-radius:8px;padding:8px 16px;
+    font-size:12px;cursor:pointer;white-space:nowrap;
+    transition:border-color 0.2s,box-shadow 0.2s;
+}
+.btn-add:hover{border-color:rgba(0,255,170,0.5);box-shadow:0 4px 16px rgba(0,255,170,0.08)}
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.bm-card{
+    background:rgba(8,14,28,0.85);border:1px solid rgba(40,60,100,0.2);
+    border-radius:12px;padding:14px 16px;
+    display:flex;align-items:center;gap:12px;cursor:pointer;
+    transition:background 0.15s,border-color 0.2s,transform 0.15s;
+    position:relative;
+}
+.bm-card:hover{background:rgba(12,22,44,0.9);border-color:rgba(0,255,170,0.18);transform:translateY(-2px)}
+.bm-card:hover .bm-del{opacity:1}
+.favicon{
+    width:28px;height:28px;border-radius:6px;flex-shrink:0;
+    background:#0a1828;display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:#4a6a84;font-weight:700;overflow:hidden;
+}
+.favicon img{width:100%;height:100%;object-fit:cover;border-radius:5px}
+.bm-info{flex:1;min-width:0}
+.bm-title{font-size:13px;color:#c0d8e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bm-url{font-size:10px;color:#2a4a62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.bm-del{
+    opacity:0;background:transparent;border:none;cursor:pointer;
+    color:#603030;padding:4px;flex-shrink:0;
+    transition:opacity 0.15s,color 0.15s;
+}
+.bm-del:hover{color:#ff6060}
+.bm-del svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.empty{text-align:center;padding:80px 20px;color:#2a3a50;font-size:14px;line-height:2}
+.empty svg{width:48px;height:48px;stroke:#1a2a3a;fill:none;stroke-width:1.2;display:block;margin:0 auto 16px}
+/* Add dialog */
+.dialog-bg{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);
+    z-index:100;align-items:center;justify-content:center;
+}
+.dialog-bg.open{display:flex}
+.dialog{
+    background:#0b1322;border:1px solid rgba(0,255,170,0.2);
+    border-radius:14px;padding:28px;width:400px;max-width:90vw;
+}
+.dialog h2{font-size:17px;color:#7fffd4;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:#5f7390;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px}
+.field input{
+    width:100%;background:#060e1c;color:#c0d8e8;
+    border:1px solid rgba(60,80,120,0.35);border-radius:8px;
+    padding:9px 12px;font-size:13px;outline:none;
+}
+.field input:focus{border-color:rgba(0,255,170,0.35);box-shadow:0 0 0 2px rgba(0,255,170,0.07)}
+.dialog-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.dialog-actions button{
+    background:#0a1828;color:#b0c8e0;
+    border:1px solid rgba(60,80,120,0.3);
+    border-radius:8px;padding:8px 18px;font-size:12px;cursor:pointer;
+}
+.dialog-actions button.save{
+    background:rgba(0,80,50,0.2);color:#7fffd4;
+    border-color:rgba(0,255,170,0.25);
+}
+.dialog-actions button.save:hover{border-color:rgba(0,255,170,0.5)}
+</style>
+</head>
+<body>
+<div class="page">
+    <div class="page-header">
+        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <h1>Bookmarks</h1>
+    </div>
+    <div class="toolbar">
+        <div class="search-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input class="search-input" id="searchInput" placeholder="Search bookmarks..." oninput="filterBm(this.value)">
+        </div>
+        <button class="btn-add" onclick="openAdd()">+ Add</button>
+    </div>
+    <div class="bm-grid" id="bmGrid"></div>
+</div>
+
+<!-- Add dialog -->
+<div class="dialog-bg" id="dialogBg" onclick="if(event.target===this)closeAdd()">
+    <div class="dialog">
+        <h2>Add Bookmark</h2>
+        <div class="field"><label>Name</label><input id="addName" type="text" placeholder="My Bookmark"></div>
+        <div class="field"><label>URL</label><input id="addUrl" type="text" placeholder="https://example.com"></div>
+        <div class="dialog-actions">
+            <button onclick="closeAdd()">Cancel</button>
+            <button class="save" onclick="saveBookmark()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const IPC_TOKEN = "__IPC_TOKEN__";
+let BM = Object.entries(__BOOKMARKS_JSON__).map(([t,u])=>({title:t,url:u}));
+let filtered = [...BM];
+
+function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+function navigate(url){ ipcSend("navigate:"+url); }
+function escHtml(s){ const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+
+function faviconHtml(url){
+    try{
+        const host=new URL(url).hostname;
+        return `<img src="https://www.google.com/s2/favicons?domain=${host}&sz=32" onerror="this.style.display='none'" alt="">`;
+    }catch(e){ return ''; }
+}
+
+function render(data){
+    const g=document.getElementById('bmGrid');
+    if(!data.length){
+        g.innerHTML=`<div class="empty" style="grid-column:1/-1"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>No bookmarks yet. Press + Add to save one.</div>`;
+        return;
+    }
+    g.innerHTML=data.map((bm,i)=>`
+        <div class="bm-card" onclick="navigate('${bm.url.replace(/'/g,"\\'")}')">
+            <div class="favicon">${faviconHtml(bm.url)}</div>
+            <div class="bm-info">
+                <div class="bm-title">${escHtml(bm.title)}</div>
+                <div class="bm-url">${escHtml(bm.url)}</div>
+            </div>
+            <button class="bm-del" onclick="event.stopPropagation();removeBm('${bm.title.replace(/'/g,"\\'")}')">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+function filterBm(q){
+    const lq=q.toLowerCase();
+    filtered=BM.filter(b=>b.title.toLowerCase().includes(lq)||b.url.toLowerCase().includes(lq));
+    render(filtered);
+}
+
+function removeBm(title){
+    BM=BM.filter(b=>b.title!==title);
+    filterBm(document.getElementById('searchInput').value);
+    ipcSend('bookmark:remove:'+title);
+}
+
+function openAdd(){ document.getElementById('dialogBg').classList.add('open'); document.getElementById('addName').focus(); }
+function closeAdd(){ document.getElementById('dialogBg').classList.remove('open'); document.getElementById('addName').value=''; document.getElementById('addUrl').value=''; }
+
+function saveBookmark(){
+    const name=document.getElementById('addName').value.trim();
+    let url=document.getElementById('addUrl').value.trim();
+    if(!name||!url) return;
+    if(!url.startsWith('http')) url='https://'+url;
+    BM.unshift({title:name,url});
+    filterBm(document.getElementById('searchInput').value);
+    ipcSend('bookmark:add:'+name+':'+url);
+    closeAdd();
+}
+
+document.getElementById('addUrl').addEventListener('keydown',e=>{ if(e.key==='Enter') saveBookmark(); });
+
+render(BM);
+</script>
+</body></html>

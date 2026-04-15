@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CSS Positioning Test — Servo Fix Verification</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; margin: 16px; }
+  h1 { color: #7af; font-size: 18px; }
+  h2 { color: #fa7; font-size: 14px; margin-top: 24px; border-bottom: 1px solid #444; }
+  .desc { color: #aaa; font-size: 12px; margin-bottom: 8px; }
+
+  .rel-container {
+    position: relative;
+    background: #222;
+    border: 1px solid #555;
+    height: 160px;
+    width: 400px;
+    margin-bottom: 8px;
+  }
+  .box {
+    background: #36a;
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 8px;
+    box-sizing: border-box;
+  }
+</style>
+</head>
+<body>
+<h1>CSS Positioning Test — Servo Fix Verification</h1>
+<p class="desc">Tests for position:absolute, position:relative, position:fixed (partial), and inset/margin centering.</p>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>position: relative — top/left offset</h2>
+<p class="desc">Blue box should be offset 20px from top, 30px from left (relative to its normal position).</p>
+<div style="background:#222; border:1px solid #555; height:100px; width:400px; margin-bottom:8px;">
+  <div class="box" style="position:relative; top:20px; left:30px; display:inline-block;">Relative offset</div>
+</div>
+
+<h2>position: relative — negative offset</h2>
+<p class="desc">Box should be shifted UP 10px and LEFT 10px from its normal position.</p>
+<div style="background:#222; border:1px solid #555; height:80px; width:400px; margin-bottom:8px; padding:20px;">
+  <div class="box" style="display:inline-block; position:relative; top:-10px; left:-10px;">Negative offset</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>position: absolute — top:0 left:0</h2>
+<p class="desc">Box should be at TOP-LEFT corner of the container.</p>
+<div class="rel-container">
+  <div class="box" style="position:absolute; top:0; left:0; width:120px; height:40px;">top:0 left:0</div>
+</div>
+
+<h2>position: absolute — bottom:0 right:0</h2>
+<p class="desc">Box should be at BOTTOM-RIGHT corner of the container.</p>
+<div class="rel-container">
+  <div class="box" style="position:absolute; bottom:0; right:0; width:120px; height:40px;">bot:0 right:0</div>
+</div>
+
+<h2>position: absolute — inset:0; margin:auto (CENTERING)</h2>
+<p class="desc">Box should be PERFECTLY CENTERED in the container (horizontal + vertical).</p>
+<div class="rel-container">
+  <div class="box" style="position:absolute; inset:0; margin:auto; width:150px; height:50px; text-align:center; line-height:50px;">Centered</div>
+</div>
+
+<h2>position: absolute — top:50% left:50% with negative margin</h2>
+<p class="desc">Classic centering trick: box should be centered.</p>
+<div class="rel-container">
+  <div class="box" style="position:absolute; top:50%; left:50%; margin-top:-20px; margin-left:-60px; width:120px; height:40px; text-align:center;">Centered (margin)</div>
+</div>
+
+<h2>position: absolute — top:50% transform</h2>
+<p class="desc">Modern centering: box centered via transform.</p>
+<div class="rel-container">
+  <div class="box" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:140px; height:40px; text-align:center;">Centered (transform)</div>
+</div>
+
+<h2>position: absolute — stacking, multiple boxes</h2>
+<p class="desc">Red box (z:2) should appear ABOVE blue box (z:1).</p>
+<div class="rel-container">
+  <div style="position:absolute; top:20px; left:20px; width:120px; height:80px; background:#36a; z-index:1;">z-index:1</div>
+  <div style="position:absolute; top:40px; left:60px; width:120px; height:80px; background:#a33; z-index:2; font-size:11px; padding:4px; color:#fff;">z-index:2 (above)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>position: absolute with auto margins and known size</h2>
+<p class="desc">Using left/right auto margins with known width — box should be horizontally centered.</p>
+<div class="rel-container">
+  <div class="box" style="position:absolute; left:0; right:0; top:20px; width:160px; margin:0 auto; text-align:center; height:40px; line-height:40px;">H-centered via auto</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>Nested positioned elements</h2>
+<p class="desc">Inner box at bottom:0 right:0 should anchor to INNER container, not outer.</p>
+<div class="rel-container">
+  <div style="position:relative; width:200px; height:100px; background:#333; left:40px; top:20px;">
+    <span style="font-size:10px; color:#888;">inner container</span>
+    <div class="box" style="position:absolute; bottom:0; right:0; width:80px; height:30px; font-size:10px; line-height:30px; text-align:center;">in inner</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>position: sticky (partial support)</h2>
+<p class="desc">Box should stick at top:0 when scrolling past it. (Servo maps sticky → relative currently.)</p>
+<div style="height:100px; overflow:auto; background:#222; border:1px solid #555; width:400px; margin-bottom:8px;">
+  <div style="height:200px; padding:4px;">
+    <div style="font-size:11px; color:#aaa;">Scroll inside this box...</div>
+    <div class="box" style="position:sticky; top:0; width:180px;">Sticky header</div>
+    <div style="font-size:11px; color:#666; padding-top:60px;">...content below sticky</div>
+  </div>
+</div>
+
+<hr style="border-color:#444; margin-top:24px;">
+<p style="font-size:11px; color:#666;">
+  Load in Aurora with Servo engine. Known limitation: position:fixed maps to absolute (no viewport anchoring yet).
+</p>
+</body>
+</html>

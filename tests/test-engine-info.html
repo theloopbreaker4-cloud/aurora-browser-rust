@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Engine Info — Aurora Browser</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: monospace; background: #0d1117; color: #c9d1d9; padding: 24px; }
+  h1 { color: #58a6ff; font-size: 20px; margin-bottom: 16px; }
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { color: #ffa657; font-size: 14px; margin-bottom: 10px; }
+  .row { display: flex; gap: 12px; margin-bottom: 6px; align-items: baseline; }
+  .label { color: #8b949e; font-size: 12px; min-width: 180px; }
+  .value { color: #e6edf3; font-size: 12px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .servo  { background: #1f4e3d; color: #3fb950; border: 1px solid #238636; }
+  .chrome { background: #1a3a5c; color: #58a6ff; border: 1px solid #1f6feb; }
+  .unknown { background: #3a2a1a; color: #ffa657; border: 1px solid #9e6a03; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: #8b949e; font-size: 11px; padding: 4px 8px; border-bottom: 1px solid #30363d; }
+  td { padding: 4px 8px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  td:first-child { color: #8b949e; width: 220px; }
+  .ok  { color: #3fb950; }
+  .partial { color: #ffa657; }
+  .no  { color: #f85149; }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .feature-item {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .feature-item .name { color: #c9d1d9; }
+  .feature-item .status { font-size: 10px; margin-top: 2px; }
+</style>
+</head>
+<body>
+<h1>Aurora Browser — Engine Info</h1>
+
+<div class="card">
+  <h2>Current Engine</h2>
+  <div class="row">
+    <span class="label">User Agent:</span>
+    <span class="value" id="ua">detecting...</span>
+  </div>
+  <div class="row">
+    <span class="label">Detected Engine:</span>
+    <span id="engine-badge">...</span>
+  </div>
+  <div class="row">
+    <span class="label">Servo Version:</span>
+    <span class="value" id="servo-ver">–</span>
+  </div>
+  <div class="row">
+    <span class="label">Platform:</span>
+    <span class="value" id="platform">detecting...</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>CSS Feature Support</h2>
+  <div id="css-features" class="feature-grid"></div>
+</div>
+
+<div class="card">
+  <h2>JS API Support</h2>
+  <div id="js-features" class="feature-grid"></div>
+</div>
+
+<div class="card">
+  <h2>Known Servo Status (Aurora Fork)</h2>
+  <table>
+    <tr><th>Feature</th><th>Status</th><th>Notes</th></tr>
+    <tr><td>CSS Flexbox</td><td class="ok">✓ Working</td><td>LEFT/RIGHT/SELF_START/SELF_END fixed</td></tr>
+    <tr><td>CSS Grid</td><td class="partial">~ Partial</td><td>Subgrid not supported (1247 WPT failures)</td></tr>
+    <tr><td>CSS Positioning</td><td class="partial">~ Partial</td><td>absolute/relative OK; fixed→absolute, sticky→relative</td></tr>
+    <tr><td>CSS Animations</td><td class="partial">~ Partial</td><td>Basic transitions work</td></tr>
+    <tr><td>CSS @container</td><td class="no">✗ Missing</td><td>Container queries not yet implemented</td></tr>
+    <tr><td>CSS Counters</td><td class="no">✗ Bug</td><td>counter()/counters() always returns 0</td></tr>
+    <tr><td>JavaScript ES2020+</td><td class="ok">✓ Working</td><td>SpiderMonkey engine</td></tr>
+    <tr><td>WebGL</td><td class="partial">~ Partial</td><td>WebGL 1 OK, WebGL 2 partial</td></tr>
+    <tr><td>WebSockets</td><td class="ok">✓ Working</td><td>servo/net handles WS</td></tr>
+    <tr><td>Fetch API</td><td class="ok">✓ Working</td><td></td></tr>
+    <tr><td>Canvas 2D</td><td class="ok">✓ Working</td><td>via WebRender</td></tr>
+    <tr><td>Audio (Web Audio API)</td><td class="partial">~ Partial</td><td>Basic nodes work, some missing</td></tr>
+    <tr><td>Video (&lt;video&gt;)</td><td class="no">✗ Limited</td><td>Codec support limited on Windows</td></tr>
+    <tr><td>IntersectionObserver</td><td class="partial">~ Partial</td><td>69 WPT failures (affects lazy loading)</td></tr>
+    <tr><td>WebGPU</td><td class="partial">~ Partial</td><td>Incomplete, may crash</td></tr>
+    <tr><td>WebXR</td><td class="no">✗ Missing</td><td>Not implemented</td></tr>
+  </table>
+</div>
+
+<script>
+  // Detect UA / engine
+  const ua = navigator.userAgent;
+  document.getElementById('ua').textContent = ua;
+  document.getElementById('platform').textContent = navigator.platform + ' — ' + navigator.language;
+
+  let engineName = 'Unknown';
+  let badgeClass = 'unknown';
+  if (/Servo/.test(ua)) {
+    engineName = 'Servo';
+    badgeClass = 'servo';
+    // Try to extract version
+    const m = ua.match(/Servo\/([^\s]+)/);
+    document.getElementById('servo-ver').textContent = m ? m[1] : 'present (version unknown)';
+  } else if (/Chrome/.test(ua)) {
+    engineName = 'Chromium / WebView2';
+    badgeClass = 'chrome';
+  } else if (/Firefox/.test(ua)) {
+    engineName = 'Gecko (Firefox)';
+    badgeClass = 'servo';
+  }
+  document.getElementById('engine-badge').innerHTML =
+    `<span class="badge ${badgeClass}">${engineName}</span>`;
+
+  // CSS feature detection
+  const cssTests = [
+    ['display: flex',           CSS.supports('display','flex')],
+    ['display: grid',           CSS.supports('display','grid')],
+    ['display: grid (subgrid)', CSS.supports('grid-template-rows','subgrid')],
+    ['position: sticky',        CSS.supports('position','sticky')],
+    ['gap (flex)',               CSS.supports('gap','1px')],
+    ['aspect-ratio',            CSS.supports('aspect-ratio','1')],
+    ['@container queries',      CSS.supports('container-type','inline-size')],
+    ['CSS Variables',           CSS.supports('color','var(--x)')],
+    ['calc()',                   CSS.supports('width','calc(1px + 1%)')],
+    ['clamp()',                  CSS.supports('width','clamp(1px,2px,3px)')],
+    ['CSS Grid: repeat(auto-fill)', CSS.supports('grid-template-columns','repeat(auto-fill,1px)')],
+    ['transform: translate',    CSS.supports('transform','translate(0)')],
+    ['filter: blur',            CSS.supports('filter','blur(1px)')],
+    ['backdrop-filter',         CSS.supports('backdrop-filter','blur(1px)')],
+    ['content-visibility',      CSS.supports('content-visibility','auto')],
+  ];
+  const cssGrid = document.getElementById('css-features');
+  cssTests.forEach(([name, supported]) => {
+    cssGrid.innerHTML += `<div class="feature-item">
+      <div class="name">${name}</div>
+      <div class="status ${supported ? 'ok' : 'no'}">${supported ? '✓ supported' : '✗ not supported'}</div>
+    </div>`;
+  });
+
+  // JS API detection
+  const jsTests = [
+    ['Promise',             typeof Promise !== 'undefined'],
+    ['async/await',         (() => { try { eval('(async()=>{})'); return true; } catch(e) { return false; } })()],
+    ['WebSockets',          typeof WebSocket !== 'undefined'],
+    ['fetch()',             typeof fetch !== 'undefined'],
+    ['IndexedDB',           typeof indexedDB !== 'undefined'],
+    ['localStorage',        typeof localStorage !== 'undefined'],
+    ['sessionStorage',      typeof sessionStorage !== 'undefined'],
+    ['Canvas 2D',           (() => { const c = document.createElement('canvas'); return !!(c.getContext && c.getContext('2d')); })()],
+    ['WebGL',               (() => { const c = document.createElement('canvas'); return !!(c.getContext && c.getContext('webgl')); })()],
+    ['WebGL2',              (() => { const c = document.createElement('canvas'); return !!(c.getContext && c.getContext('webgl2')); })()],
+    ['Web Audio API',       typeof AudioContext !== 'undefined'],
+    ['IntersectionObserver',typeof IntersectionObserver !== 'undefined'],
+    ['ResizeObserver',      typeof ResizeObserver !== 'undefined'],
+    ['MutationObserver',    typeof MutationObserver !== 'undefined'],
+    ['ServiceWorker',       typeof navigator.serviceWorker !== 'undefined'],
+    ['Geolocation',         typeof navigator.geolocation !== 'undefined'],
+    ['WebGPU',              typeof navigator.gpu !== 'undefined'],
+    ['Clipboard API',       typeof navigator.clipboard !== 'undefined'],
+    ['Crypto (SubtleCrypto)', typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined'],
+    ['SharedArrayBuffer',   typeof SharedArrayBuffer !== 'undefined'],
+    ['Atomics',             typeof Atomics !== 'undefined'],
+    ['WASM',                typeof WebAssembly !== 'undefined'],
+    ['structuredClone',     typeof structuredClone !== 'undefined'],
+  ];
+  const jsGrid = document.getElementById('js-features');
+  jsTests.forEach(([name, supported]) => {
+    jsGrid.innerHTML += `<div class="feature-item">
+      <div class="name">${name}</div>
+      <div class="status ${supported ? 'ok' : 'no'}">${supported ? '✓' : '✗'} ${supported ? 'present' : 'missing'}</div>
+    </div>`;
+  });
+</script>
+</body>
+</html>

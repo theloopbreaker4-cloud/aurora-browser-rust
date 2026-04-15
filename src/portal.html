@@ -32,8 +32,8 @@ body {
     align-items: center; margin-bottom: 30px;
 }
 .logo-img {
-    width: 100px; height: 100px; margin-bottom: 16px;
-    border-radius: 50%;
+    width: 120px; height: 120px; margin-bottom: 16px;
+    opacity: 0.85;
     filter: drop-shadow(0 0 25px rgba(0,255,170,0.35)) drop-shadow(0 0 50px rgba(0,255,170,0.15));
 }
 .portal-title {
@@ -93,117 +93,195 @@ body {
     <svg class="aurora-svg-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
         <defs>
             <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#010308"/>
-                <stop offset="25%" stop-color="#040a18"/>
-                <stop offset="55%" stop-color="#081228"/>
-                <stop offset="80%" stop-color="#0c1830"/>
-                <stop offset="100%" stop-color="#101e38"/>
+                <stop offset="0%"   stop-color="#010308"/>
+                <stop offset="30%"  stop-color="#030c1a"/>
+                <stop offset="65%"  stop-color="#060f22"/>
+                <stop offset="100%" stop-color="#080e20"/>
             </linearGradient>
-            <filter id="softBlur"><feGaussianBlur stdDeviation="120"/></filter>
-            <filter id="medBlur"><feGaussianBlur stdDeviation="85"/></filter>
-            <filter id="wideBlur"><feGaussianBlur stdDeviation="140"/></filter>
-            <filter id="coreGlow"><feGaussianBlur stdDeviation="55"/></filter>
-            <filter id="edgeFeather">
-                <feGaussianBlur stdDeviation="28"/>
-            </filter>
-            <radialGradient id="auroraFeather" cx="50%" cy="35%" r="70%">
-                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
-                <stop offset="45%" stop-color="#ffffff" stop-opacity="0.8"/>
-                <stop offset="75%" stop-color="#ffffff" stop-opacity="0.35"/>
-                <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-            </radialGradient>
-            <mask id="auroraMask">
-                <rect width="1440" height="900" fill="url(#auroraFeather)"/>
-            </mask>
-            <linearGradient id="ag1" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#00ff8c" stop-opacity="0"/>
-                <stop offset="10%" stop-color="#00ff8c" stop-opacity="0.08"/>
-                <stop offset="25%" stop-color="#00ffa0" stop-opacity="0.28"/>
-                <stop offset="40%" stop-color="#00ffb4" stop-opacity="0.45"/>
-                <stop offset="50%" stop-color="#20ffc0" stop-opacity="0.5"/>
-                <stop offset="60%" stop-color="#00ffa8" stop-opacity="0.4"/>
-                <stop offset="75%" stop-color="#00e8c0" stop-opacity="0.22"/>
-                <stop offset="90%" stop-color="#00d0ff" stop-opacity="0.08"/>
-                <stop offset="100%" stop-color="#00d0ff" stop-opacity="0"/>
+
+            <!-- Blur filters — oversized to prevent any clipping -->
+            <filter id="b1" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="90"/></filter>
+            <filter id="b2" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="140"/></filter>
+            <filter id="b3" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="60"/></filter>
+            <filter id="b4" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="38"/></filter>
+            <!-- Extra strong blur for curtain stripes -->
+            <filter id="bC" x="-150%" y="-30%" width="400%" height="160%"><feGaussianBlur stdDeviation="55 28"/></filter>
+
+            <!-- Curtain stripe gradients — vertical, fade top+bottom -->
+            <linearGradient id="sv1" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#00ffb0" stop-opacity="0"/>
+                <stop offset="8%"   stop-color="#00ffb0" stop-opacity="0.22"/>
+                <stop offset="45%"  stop-color="#00ffc8" stop-opacity="0.28"/>
+                <stop offset="72%"  stop-color="#20ffe0" stop-opacity="0.15"/>
+                <stop offset="90%"  stop-color="#00e8ff" stop-opacity="0.05"/>
+                <stop offset="100%" stop-color="#00ccff" stop-opacity="0"/>
             </linearGradient>
-            <linearGradient id="ag2" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#00c8b0" stop-opacity="0"/>
-                <stop offset="20%" stop-color="#00dcc0" stop-opacity="0.12"/>
-                <stop offset="40%" stop-color="#00ffd0" stop-opacity="0.28"/>
-                <stop offset="55%" stop-color="#00ffb8" stop-opacity="0.32"/>
-                <stop offset="70%" stop-color="#00e0d0" stop-opacity="0.2"/>
-                <stop offset="85%" stop-color="#00c0ff" stop-opacity="0.1"/>
+            <linearGradient id="sv2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#40ffa0" stop-opacity="0"/>
+                <stop offset="10%"  stop-color="#40ffa0" stop-opacity="0.18"/>
+                <stop offset="50%"  stop-color="#60ffb8" stop-opacity="0.22"/>
+                <stop offset="78%"  stop-color="#30ffc0" stop-opacity="0.1"/>
+                <stop offset="100%" stop-color="#10ffaa" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="sv3" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#00d8ff" stop-opacity="0"/>
+                <stop offset="12%"  stop-color="#00e8ff" stop-opacity="0.14"/>
+                <stop offset="55%"  stop-color="#10f0ff" stop-opacity="0.18"/>
+                <stop offset="82%"  stop-color="#00d0ff" stop-opacity="0.07"/>
+                <stop offset="100%" stop-color="#00b8ff" stop-opacity="0"/>
+            </linearGradient>
+
+            <!-- Aurora band gradients — horizontal -->
+            <linearGradient id="c1" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%"   stop-color="#00ffaa" stop-opacity="0"/>
+                <stop offset="15%"  stop-color="#00ffaa" stop-opacity="0.55"/>
+                <stop offset="40%"  stop-color="#00ffc8" stop-opacity="0.7"/>
+                <stop offset="60%"  stop-color="#20ffe0" stop-opacity="0.58"/>
+                <stop offset="80%"  stop-color="#00e8ff" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#00ccff" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="c2" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%"   stop-color="#00e8c0" stop-opacity="0"/>
+                <stop offset="18%"  stop-color="#00f0b0" stop-opacity="0.42"/>
+                <stop offset="45%"  stop-color="#30ffd0" stop-opacity="0.58"/>
+                <stop offset="68%"  stop-color="#00ffe8" stop-opacity="0.44"/>
+                <stop offset="88%"  stop-color="#00d8ff" stop-opacity="0.15"/>
                 <stop offset="100%" stop-color="#00b0ff" stop-opacity="0"/>
             </linearGradient>
-            <linearGradient id="ag3" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#40ffa0" stop-opacity="0"/>
-                <stop offset="30%" stop-color="#30ff90" stop-opacity="0.1"/>
-                <stop offset="50%" stop-color="#50ffb0" stop-opacity="0.18"/>
-                <stop offset="70%" stop-color="#20ffa0" stop-opacity="0.1"/>
-                <stop offset="100%" stop-color="#40ffa0" stop-opacity="0"/>
+            <linearGradient id="c3" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%"   stop-color="#50ffb0" stop-opacity="0"/>
+                <stop offset="28%"  stop-color="#40ffa0" stop-opacity="0.32"/>
+                <stop offset="52%"  stop-color="#60ffb8" stop-opacity="0.44"/>
+                <stop offset="74%"  stop-color="#30ffc0" stop-opacity="0.28"/>
+                <stop offset="100%" stop-color="#20ffaa" stop-opacity="0"/>
             </linearGradient>
-            <radialGradient id="centerGlow" cx="50%" cy="30%" r="50%">
-                <stop offset="0%" stop-color="#00ffa8" stop-opacity="0.12"/>
-                <stop offset="40%" stop-color="#00ff90" stop-opacity="0.06"/>
-                <stop offset="100%" stop-color="#00ff90" stop-opacity="0"/>
+            <linearGradient id="c4" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%"   stop-color="#00d0ff" stop-opacity="0"/>
+                <stop offset="32%"  stop-color="#00e0ff" stop-opacity="0.26"/>
+                <stop offset="56%"  stop-color="#10f0ff" stop-opacity="0.36"/>
+                <stop offset="80%"  stop-color="#00ccff" stop-opacity="0.16"/>
+                <stop offset="100%" stop-color="#00aaff" stop-opacity="0"/>
+            </linearGradient>
+
+            <!-- Ambient glow -->
+            <radialGradient id="amb" cx="50%" cy="35%" r="65%">
+                <stop offset="0%"   stop-color="#00ffa0" stop-opacity="0.07"/>
+                <stop offset="55%"  stop-color="#00e8c0" stop-opacity="0.03"/>
+                <stop offset="100%" stop-color="#00c0ff" stop-opacity="0"/>
             </radialGradient>
         </defs>
+
+        <!-- Sky -->
         <rect width="1440" height="900" fill="url(#sky)"/>
-        <rect width="1440" height="900" fill="url(#centerGlow)"/>
-        <g mask="url(#auroraMask)" filter="url(#edgeFeather)">
-            <ellipse cx="720" cy="160" rx="1000" ry="200" fill="url(#ag3)" filter="url(#wideBlur)" opacity="0.5">
-                <animateTransform attributeName="transform" type="translate" values="0,0;30,8;-20,-5;15,3;0,0" dur="30s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.3;0.5;0.38;0.46;0.3" dur="25s" repeatCount="indefinite"/>
-            </ellipse>
-            <ellipse cx="720" cy="200" rx="900" ry="140" fill="url(#ag1)" filter="url(#softBlur)" opacity="0.6">
-                <animateTransform attributeName="transform" type="translate" values="-30,0;40,10;-20,-8;35,5;-30,0" dur="24s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.5;0.7;0.55;0.65;0.5" dur="16s" repeatCount="indefinite"/>
-                <animate attributeName="ry" values="140;170;125;160;140" dur="20s" repeatCount="indefinite"/>
-            </ellipse>
-            <ellipse cx="700" cy="240" rx="850" ry="120" fill="url(#ag2)" filter="url(#softBlur)" opacity="0.45">
-                <animateTransform attributeName="transform" type="translate" values="25,-3;-45,8;30,0;-35,-5;25,-3" dur="28s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.35;0.55;0.4;0.5;0.35" dur="18s" repeatCount="indefinite"/>
-            </ellipse>
-            <ellipse cx="750" cy="120" rx="750" ry="100" fill="url(#ag3)" filter="url(#wideBlur)" opacity="0.35">
-                <animateTransform attributeName="transform" type="translate" values="-15,3;30,-4;-25,6;20,0;-15,3" dur="26s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.25;0.4;0.3;0.45;0.25" dur="22s" repeatCount="indefinite"/>
-            </ellipse>
-            <ellipse cx="720" cy="195" rx="550" ry="50" fill="#00ffa0" filter="url(#medBlur)" opacity="0.22">
-                <animateTransform attributeName="transform" type="translate" values="-20,0;30,5;-15,-3;25,2;-20,0" dur="18s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.15;0.3;0.2;0.26;0.15" dur="12s" repeatCount="indefinite"/>
-                <animate attributeName="ry" values="50;68;42;62;50" dur="14s" repeatCount="indefinite"/>
-            </ellipse>
-            <ellipse cx="720" cy="190" rx="400" ry="20" fill="#40ffb0" filter="url(#coreGlow)" opacity="0.26">
-                <animateTransform attributeName="transform" type="translate" values="-15,0;25,4;-10,-2;20,1;-15,0" dur="16s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.18;0.35;0.22;0.3;0.18" dur="10s" repeatCount="indefinite"/>
-                <animate attributeName="ry" values="20;32;16;30;20" dur="11s" repeatCount="indefinite"/>
-            </ellipse>
-            <g filter="url(#wideBlur)" opacity="0.08">
-                <rect x="280" y="80" width="8" height="250" fill="#00ffa0" rx="4"><animate attributeName="height" values="250;300;230;280;250" dur="12s" repeatCount="indefinite"/></rect>
-                <rect x="480" y="60" width="8" height="280" fill="#00ffb0" rx="4"><animate attributeName="height" values="280;240;300;260;280" dur="14s" repeatCount="indefinite"/></rect>
-                <rect x="680" y="50" width="10" height="300" fill="#20ffc0" rx="5"><animate attributeName="height" values="300;340;280;320;300" dur="11s" repeatCount="indefinite"/></rect>
-                <rect x="880" y="65" width="8" height="270" fill="#00ffe0" rx="4"><animate attributeName="height" values="270;310;250;290;270" dur="13s" repeatCount="indefinite"/></rect>
-                <rect x="1080" y="75" width="7" height="250" fill="#00ffa0" rx="3"><animate attributeName="height" values="250;290;240;270;250" dur="10s" repeatCount="indefinite"/></rect>
-            </g>
+        <rect width="1440" height="900" fill="url(#amb)"/>
+
+        <!-- ── Curtain stripes ── softly blurred vertical ribbons, full height -->
+        <g filter="url(#bC)" opacity="0.4">
+            <rect x="215"  y="-20" width="38" height="940" fill="url(#sv2)" opacity="0.38">
+                <animate attributeName="opacity" dur="17s" repeatCount="indefinite" values="0.28;0.45;0.32;0.42;0.28"/>
+                <animate attributeName="x"       dur="22s" repeatCount="indefinite" values="215;230;208;222;215"/>
+            </rect>
+            <rect x="370"  y="-20" width="28" height="940" fill="url(#sv1)" opacity="0.32">
+                <animate attributeName="opacity" dur="21s" repeatCount="indefinite" values="0.22;0.38;0.28;0.35;0.22"/>
+                <animate attributeName="x"       dur="18s" repeatCount="indefinite" values="370;385;362;378;370"/>
+            </rect>
+            <rect x="530"  y="-20" width="44" height="940" fill="url(#sv3)" opacity="0.28">
+                <animate attributeName="opacity" dur="14s" repeatCount="indefinite" values="0.18;0.35;0.24;0.32;0.18"/>
+                <animate attributeName="x"       dur="25s" repeatCount="indefinite" values="530;548;520;540;530"/>
+            </rect>
+            <rect x="700"  y="-20" width="34" height="940" fill="url(#sv1)" opacity="0.35">
+                <animate attributeName="opacity" dur="19s" repeatCount="indefinite" values="0.25;0.42;0.3;0.38;0.25"/>
+                <animate attributeName="x"       dur="16s" repeatCount="indefinite" values="700;718;692;710;700"/>
+            </rect>
+            <rect x="870"  y="-20" width="30" height="940" fill="url(#sv2)" opacity="0.3">
+                <animate attributeName="opacity" dur="23s" repeatCount="indefinite" values="0.2;0.36;0.26;0.33;0.2"/>
+                <animate attributeName="x"       dur="20s" repeatCount="indefinite" values="870;886;862;878;870"/>
+            </rect>
+            <rect x="1040" y="-20" width="36" height="940" fill="url(#sv3)" opacity="0.32">
+                <animate attributeName="opacity" dur="15s" repeatCount="indefinite" values="0.22;0.38;0.28;0.35;0.22"/>
+                <animate attributeName="x"       dur="28s" repeatCount="indefinite" values="1040;1055;1032;1048;1040"/>
+            </rect>
+            <rect x="1210" y="-20" width="26" height="940" fill="url(#sv1)" opacity="0.26">
+                <animate attributeName="opacity" dur="18s" repeatCount="indefinite" values="0.18;0.32;0.22;0.28;0.18"/>
+                <animate attributeName="x"       dur="24s" repeatCount="indefinite" values="1210;1224;1204;1216;1210"/>
+            </rect>
         </g>
-        <defs>
-            <linearGradient id="bottomFade" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#030610" stop-opacity="0"/>
-                <stop offset="30%" stop-color="#040a15" stop-opacity="0.18"/>
-                <stop offset="65%" stop-color="#050c18" stop-opacity="0.55"/>
-                <stop offset="100%" stop-color="#060d1a" stop-opacity="0.9"/>
-            </linearGradient>
-            <filter id="bottomBlur"><feGaussianBlur stdDeviation="26"/></filter>
-        </defs>
-        <rect x="0" y="420" width="1440" height="520" fill="url(#bottomFade)" opacity="0.85" filter="url(#bottomBlur)"/>
-        <rect x="0" y="520" width="1440" height="420" fill="url(#bottomFade)" opacity="0.9"/>
+
+        <!-- ── Aurora bands — wide ellipses filling full height ── -->
+        <g opacity="0.35">
+            <!-- Base: very wide low layer stretching down -->
+            <ellipse cx="700" cy="380" rx="980" ry="420" fill="url(#c1)" filter="url(#b2)" opacity="0.5">
+                <animateTransform attributeName="transform" type="translate" dur="32s" repeatCount="indefinite"
+                    values="0,0; 55,18; -32,-10; 42,8; -22,14; 0,0"/>
+                <animate attributeName="opacity" dur="26s" repeatCount="indefinite"
+                    values="0.38;0.58;0.44;0.62;0.36;0.38"/>
+                <animate attributeName="ry" dur="24s" repeatCount="indefinite"
+                    values="420;490;385;458;400;420"/>
+            </ellipse>
+
+            <!-- Mid: slightly narrower, faster -->
+            <ellipse cx="760" cy="310" rx="900" ry="340" fill="url(#c2)" filter="url(#b1)" opacity="0.55">
+                <animateTransform attributeName="transform" type="translate" dur="24s" repeatCount="indefinite"
+                    values="-42,0; 62,20; -28,-12; 52,10; -38,4; -42,0"/>
+                <animate attributeName="opacity" dur="18s" repeatCount="indefinite"
+                    values="0.44;0.66;0.5;0.64;0.42;0.44"/>
+                <animate attributeName="ry" dur="20s" repeatCount="indefinite"
+                    values="340;400;305;370;320;340"/>
+            </ellipse>
+
+            <!-- Bright core band -->
+            <ellipse cx="680" cy="260" rx="760" ry="200" fill="url(#c1)" filter="url(#b3)" opacity="0.48">
+                <animateTransform attributeName="transform" type="translate" dur="20s" repeatCount="indefinite"
+                    values="22,0; -52,12; 36,-6; -32,14; 22,0"/>
+                <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
+                    values="0.36;0.58;0.42;0.55;0.36"/>
+                <animate attributeName="ry" dur="16s" repeatCount="indefinite"
+                    values="200;250;175;230;195;200"/>
+            </ellipse>
+
+            <!-- Upper shimmer -->
+            <ellipse cx="730" cy="180" rx="840" ry="160" fill="url(#c3)" filter="url(#b2)" opacity="0.38">
+                <animateTransform attributeName="transform" type="translate" dur="28s" repeatCount="indefinite"
+                    values="-22,6; 46,-10; -36,14; 32,-5; -22,6"/>
+                <animate attributeName="opacity" dur="20s" repeatCount="indefinite"
+                    values="0.26;0.44;0.3;0.42;0.26"/>
+            </ellipse>
+
+            <!-- Blue-teal accent -->
+            <ellipse cx="720" cy="220" rx="720" ry="260" fill="url(#c4)" filter="url(#b1)" opacity="0.35">
+                <animateTransform attributeName="transform" type="translate" dur="36s" repeatCount="indefinite"
+                    values="32,0; -62,14; 42,-8; -48,10; 32,0"/>
+                <animate attributeName="opacity" dur="24s" repeatCount="indefinite"
+                    values="0.26;0.42;0.3;0.4;0.26"/>
+                <animate attributeName="ry" dur="18s" repeatCount="indefinite"
+                    values="260;320;230;290;260"/>
+            </ellipse>
+
+            <!-- Bright inner ribbon -->
+            <ellipse cx="720" cy="210" rx="600" ry="60" fill="#60ffe8" filter="url(#b4)" opacity="0.28">
+                <animateTransform attributeName="transform" type="translate" dur="16s" repeatCount="indefinite"
+                    values="-22,0; 32,8; -20,-5; 26,4; -22,0"/>
+                <animate attributeName="opacity" dur="11s" repeatCount="indefinite"
+                    values="0.18;0.36;0.22;0.32;0.18"/>
+                <animate attributeName="ry" dur="13s" repeatCount="indefinite"
+                    values="60;85;48;75;60"/>
+            </ellipse>
+
+            <!-- Deep background green wash -->
+            <ellipse cx="720" cy="480" rx="1120" ry="500" fill="url(#c3)" filter="url(#b2)" opacity="0.2">
+                <animateTransform attributeName="transform" type="translate" dur="40s" repeatCount="indefinite"
+                    values="0,0; -42,20; 32,-12; -28,10; 0,0"/>
+                <animate attributeName="opacity" dur="32s" repeatCount="indefinite"
+                    values="0.14;0.24;0.18;0.22;0.14"/>
+            </ellipse>
+        </g>
     </svg>
 
     <div class="stars-layer" id="starsLayer"></div>
 
     <div class="portal-content">
         <div class="logo-wrap">
-            <img class="logo-img" src="data:image/png;base64,__ICON_BASE64__" alt="Aurora" onerror="this.style.display='none'">
+            <img class="logo-img" src="__ICON_BASE64__" alt="Aurora">
             <h1 class="portal-title">Aurora</h1>
         </div>
         <div class="portal-search-wrap">

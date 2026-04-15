@@ -27,7 +27,11 @@ pub fn load_locale() -> String {
 
     let lang = serde_json::from_str::<Value>(&config_str)
         .ok()
-        .and_then(|v| v.get("language").and_then(|v| v.as_str()).map(|s| s.to_string()))
+        .and_then(|v| {
+            v.get("language")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+        })
         .unwrap_or_else(|| "en".to_string());
 
     // Try exe dir first, then cwd, then fall back to en.json
@@ -35,8 +39,9 @@ pub fn load_locale() -> String {
     if locale_path.exists() {
         fs::read_to_string(&locale_path).unwrap_or_else(|_| "{}".to_string())
     } else {
-        fs::read_to_string(format!("locales/{}.json", lang))
-            .unwrap_or_else(|_| fs::read_to_string("locales/en.json").unwrap_or_else(|_| "{}".to_string()))
+        fs::read_to_string(format!("locales/{}.json", lang)).unwrap_or_else(|_| {
+            fs::read_to_string("locales/en.json").unwrap_or_else(|_| "{}".to_string())
+        })
     }
 }
 
@@ -55,12 +60,58 @@ pub fn load_config() -> String {
 /// Updates a single key in a JSON config string and returns the updated string.
 /// Creates the key if it doesn't exist; preserves all other keys.
 pub fn update_config_value(config: &str, key: &str, value: &str) -> String {
-    let mut root = serde_json::from_str::<Value>(config)
-        .unwrap_or_else(|_| Value::Object(Default::default()));
+    let mut root =
+        serde_json::from_str::<Value>(config).unwrap_or_else(|_| Value::Object(Default::default()));
     if let Value::Object(ref mut map) = root {
         map.insert(key.to_string(), Value::String(value.to_string()));
     }
     serde_json::to_string_pretty(&root).unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Returns the current browser engine: "webview2" or "servo"
+pub fn get_engine() -> String {
+    let config = load_config();
+    serde_json::from_str::<Value>(&config)
+        .ok()
+        .and_then(|v| {
+            v.get("engine")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+        })
+        .unwrap_or_else(|| "webview2".to_string())
+}
+
+/// Saves the engine setting to config.json
+pub fn set_engine(engine: &str) {
+    let dir = exe_dir();
+    let config_path = dir.join("config.json");
+    let config_str = load_config();
+    let new_config = update_config_value(&config_str, "engine", engine);
+    let _ = std::fs::write(&config_path, &new_config);
+    let _ = std::fs::write("config.json", &new_config);
+}
+
+/// Returns the last visited URL saved before an engine switch.
+pub fn get_last_url() -> Option<String> {
+    let config = load_config();
+    serde_json::from_str::<serde_json::Value>(&config)
+        .ok()
+        .and_then(|v| {
+            v.get("last_url")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+        })
+        .filter(|s| !s.is_empty() && s != "aurora://newtab")
+}
+
+/// Saves the current URL so it can be restored after an engine switch.
+pub fn set_last_url(url: &str) {
+    let dir = exe_dir();
+    let config_path = dir.join("config.json");
+    let config_str = load_config();
+    let new_config = update_config_value(&config_str, "last_url", url);
+    let _ = std::fs::write(&config_path, &new_config);
+    let _ = std::fs::write("config.json", &new_config);
 }
 
 /// Loads bookmarks.json as a raw JSON string.

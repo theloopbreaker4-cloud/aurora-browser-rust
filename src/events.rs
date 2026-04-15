@@ -14,7 +14,16 @@ pub enum UserEvent {
     OpenDevTools,
     SetZoom(f64),
     FindText(String),
+    FindPrev(String),
     Print,
     ViewSource,
     ToggleFullscreen,
+    MinimizeWindow,
+    MaximizeWindow,
+    CloseWindow,
+    DragWindow,
+    SwitchEngine(String),
+    /// Wakes the event loop when Servo needs to paint a new frame.
+    #[cfg(feature = "servo-engine")]
+    ServoWake,
 }
