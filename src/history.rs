@@ -17,6 +17,13 @@ pub fn load_history() -> String {
         .unwrap_or_else(|_| "[]".to_string())
 }
 
+/// Truncates history.json to an empty list.
+pub fn clear_history() {
+    let dir = config::exe_dir();
+    let _ = std::fs::write(dir.join("history.json"), "[]");
+    let _ = std::fs::write("history.json", "[]");
+}
+
 /// Appends a visit entry to history.json.
 /// Entry format: {"title": "...", "url": "...", "time": <unix_ms>}
 pub fn push_history_entry(title: &str, url: &str) {

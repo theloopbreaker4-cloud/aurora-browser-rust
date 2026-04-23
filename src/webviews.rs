@@ -36,11 +36,40 @@ pub fn build_toolbar_webview(
                 let _ = proxy_toolbar.send_event(UserEvent::Reload);
             } else if msg == "stop" {
                 let _ = proxy_toolbar.send_event(UserEvent::Stop);
-            } else if msg.starts_with("menu:") {
-                // Menu items send "menu:action" → navigate to aurora://action
-                let action = msg.strip_prefix("menu:").unwrap_or("");
-                let _ =
-                    proxy_toolbar.send_event(UserEvent::Navigate(format!("aurora://{}", action)));
+            } else if let Some(action) = msg.strip_prefix("menu:") {
+                // Menu items: map known actions to navigation or one-off events.
+                // Unknown actions fall through to aurora://<action> for forward compatibility.
+                let event = match action {
+                    "bookmark_manager" | "import_export" | "bookmarks" => {
+                        UserEvent::Navigate("aurora://bookmarks".to_string())
+                    }
+                    "recent_pages" | "all_history" | "history" => {
+                        UserEvent::Navigate("aurora://history".to_string())
+                    }
+                    "all_downloads" | "downloads" => {
+                        UserEvent::Navigate("aurora://downloads".to_string())
+                    }
+                    "general" | "privacy" | "settings" => {
+                        UserEvent::Navigate("aurora://settings".to_string())
+                    }
+                    "extensions" | "extension_manager" | "extension_store" => {
+                        UserEvent::Navigate("aurora://extensions".to_string())
+                    }
+                    "open_incognito" | "incognito" | "about_incognito" => {
+                        UserEvent::Navigate("aurora://incognito".to_string())
+                    }
+                    "clear_history" => UserEvent::ClearHistory,
+                    _ => UserEvent::Navigate(format!("aurora://{}", action)),
+                };
+                let _ = proxy_toolbar.send_event(event);
+            } else if let Some(payload) = msg.strip_prefix("add_bookmark:") {
+                // Format: "add_bookmark:<title>|<url>" — toolbar JS sends this with current tab.
+                if let Some((t, u)) = payload.split_once('|') {
+                    let _ = proxy_toolbar.send_event(UserEvent::AddBookmark(
+                        t.to_string(),
+                        u.to_string(),
+                    ));
+                }
             } else if msg == "devtools" {
                 let _ = proxy_toolbar.send_event(UserEvent::OpenDevTools);
             } else if msg == "fullscreen" {

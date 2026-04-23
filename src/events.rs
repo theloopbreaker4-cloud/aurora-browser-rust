@@ -23,6 +23,10 @@ pub enum UserEvent {
     CloseWindow,
     DragWindow,
     SwitchEngine(String),
+    /// Bookmark current page (title, url) into bookmarks.json.
+    AddBookmark(String, String),
+    /// Wipe history.json.
+    ClearHistory,
     /// Wakes the event loop when Servo needs to paint a new frame.
     #[cfg(feature = "servo-engine")]
     ServoWake,
