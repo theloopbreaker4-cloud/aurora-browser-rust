@@ -583,6 +583,27 @@ pub fn run() {
                         *control_flow = ControlFlow::Exit;
                     }
 
+                    UserEvent::AddBookmark(title, url) => {
+                        if !url.is_empty() && !url.starts_with("aurora://") {
+                            crate::config::add_bookmark(title, url);
+                            // Refresh toolbar bookmark bar with the new entry.
+                            let bm_json = crate::config::load_bookmarks();
+                            let _ = toolbar_webview.evaluate_script(&format!(
+                                "if(window.refreshBookmarkBar){{window.AURORA_BOOKMARKS={};window.refreshBookmarkBar();}}",
+                                bm_json
+                            ));
+                        }
+                    }
+                    UserEvent::ClearHistory => {
+                        crate::history::clear_history();
+                        // If history page is currently open, reload it to show empty state.
+                        if current_url.starts_with("aurora://history") {
+                            if let Some(ref cv) = content_webview_opt {
+                                let _ = cv.load_html(&crate::history::get_history_html(&ipc_token));
+                            }
+                        }
+                    }
+
                     UserEvent::UpdateUrl(url) => {
                         if !url.starts_with("aurora://") {
                             current_url = url.clone();

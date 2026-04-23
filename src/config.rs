@@ -130,6 +130,22 @@ pub fn set_last_url(url: &str) {
     let _ = std::fs::write("config.json", &new_config);
 }
 
+/// Adds (or overwrites) a bookmark entry in bookmarks.json.
+/// Bookmarks are stored as a flat object: {"Title": "https://url", ...}.
+pub fn add_bookmark(title: &str, url: &str) {
+    let current = load_bookmarks();
+    let mut root: Value =
+        serde_json::from_str(&current).unwrap_or_else(|_| Value::Object(Default::default()));
+    if let Value::Object(ref mut map) = root {
+        map.insert(title.to_string(), Value::String(url.to_string()));
+    }
+    if let Ok(json) = serde_json::to_string_pretty(&root) {
+        let dir = exe_dir();
+        let _ = std::fs::write(dir.join("bookmarks.json"), &json);
+        let _ = std::fs::write("bookmarks.json", &json);
+    }
+}
+
 /// Loads bookmarks.json as a raw JSON string.
 /// Falls back to a hardcoded set of default bookmarks if the file is missing.
 pub fn load_bookmarks() -> String {
