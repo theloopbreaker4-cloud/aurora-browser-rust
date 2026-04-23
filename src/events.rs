@@ -26,4 +26,7 @@ pub enum UserEvent {
     /// Wakes the event loop when Servo needs to paint a new frame.
     #[cfg(feature = "servo-engine")]
     ServoWake,
+    /// IPC message from Servo-hosted aurora:// page (intercepted via aurora-ipc: scheme).
+    #[cfg(feature = "servo-engine")]
+    AuroraIpc(String),
 }

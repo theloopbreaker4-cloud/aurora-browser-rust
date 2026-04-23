@@ -119,7 +119,7 @@ const IPC_TOKEN = "__IPC_TOKEN__";
 let BM = Object.entries(__BOOKMARKS_JSON__).map(([t,u])=>({title:t,url:u}));
 let filtered = [...BM];
 
-function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+function ipcSend(msg){ if(window.ipc){ window.ipc.postMessage(IPC_TOKEN+":"+msg); } else { window.location.href="aurora-ipc:"+encodeURIComponent(IPC_TOKEN+":"+msg); } }
 function navigate(url){ ipcSend("navigate:"+url); }
 function escHtml(s){ const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
 

@@ -199,7 +199,10 @@ try {
     if(cfg.dnt) document.getElementById('dntSelect').value = cfg.dnt;
 } catch(e){}
 
-function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN + ":" + msg); }
+function ipcSend(msg){
+    if(window.ipc){ window.ipc.postMessage(IPC_TOKEN + ":" + msg); }
+    else { window.location.href = 'aurora-ipc:' + encodeURIComponent(IPC_TOKEN + ':' + msg); }
+}
 function engineLabel(v){
     const labels={webview2:'WebView2',cef:'CEF',servo:'Servo',gecko:'Gecko',webkit:'WebKit'};
     return labels[v]||v;

@@ -299,7 +299,8 @@ const IPC_TOKEN = "__IPC_TOKEN__";
 const BOOKMARKS = __BOOKMARKS_JSON__;
 
 function ipcSend(msg) {
-    window.ipc.postMessage(IPC_TOKEN + ":" + msg);
+    if(window.ipc){ window.ipc.postMessage(IPC_TOKEN + ":" + msg); }
+    else { window.location.href = "aurora-ipc:" + encodeURIComponent(IPC_TOKEN + ":" + msg); }
 }
 
 (function(){

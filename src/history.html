@@ -86,7 +86,7 @@ h1{font-size:28px;font-weight:600;color:#7fffd4;letter-spacing:0.5px}
 const IPC_TOKEN = "__IPC_TOKEN__";
 const HISTORY_DATA = __HISTORY_JSON__;
 
-function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+function ipcSend(msg){ if(window.ipc){ window.ipc.postMessage(IPC_TOKEN+":"+msg); } else { window.location.href="aurora-ipc:"+encodeURIComponent(IPC_TOKEN+":"+msg); } }
 function navigate(url){ ipcSend("navigate:"+url); }
 
 function fmtTime(ts){

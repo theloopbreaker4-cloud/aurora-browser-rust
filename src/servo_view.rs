@@ -27,8 +27,8 @@ use raw_window_handle::{
 use servo::{
     DeviceIndependentPixel, DevicePoint, EventLoopWaker, InputEvent,
     KeyboardEvent as ServoKeyboardEvent, MouseButton as ServoMouseButton, MouseButtonAction,
-    MouseButtonEvent, MouseMoveEvent, RenderingContext, ServoBuilder, ServoUrl, WebView,
-    WebViewBuilder, WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode,
+    MouseButtonEvent, MouseMoveEvent, NavigationRequest, RenderingContext, ServoBuilder, ServoUrl,
+    WebView, WebViewBuilder, WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode,
     WindowRenderingContext,
 };
 use euclid::Scale;
@@ -137,8 +137,79 @@ struct AuroraDelegate {
 
 impl WebViewDelegate for AuroraDelegate {
     fn notify_new_frame_ready(&self, _webview: WebView) {
+        slog("notify_new_frame_ready — needs_paint = true");
         self.state.needs_paint.set(true);
         let _ = self.state.proxy.send_event(UserEvent::ServoWake);
+    }
+
+    fn request_navigation(&self, _webview: WebView, request: NavigationRequest) {
+        let url_str = request.url.as_str();
+        // Intercept aurora-ipc: scheme — decode and forward as UserEvent
+        if let Some(encoded) = url_str.strip_prefix("aurora-ipc:") {
+            let decoded = percent_decode(encoded);
+            slog(&format!("aurora-ipc intercepted: {decoded}"));
+            let _ = self.state.proxy.send_event(UserEvent::AuroraIpc(decoded));
+            request.deny();
+            return;
+        }
+        // Intercept aurora:// scheme — forward as Navigate
+        if url_str.starts_with("aurora://") {
+            let _ = self.state.proxy.send_event(UserEvent::Navigate(url_str.to_string()));
+            request.deny();
+            return;
+        }
+        // Allow all other navigation
+        request.allow();
+    }
+}
+
+fn percent_decode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let bytes: Vec<u8> = s.bytes().collect();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let (Some(h), Some(l)) = (hex_val(bytes[i+1]), hex_val(bytes[i+2])) {
+                out.push((h << 4 | l) as char);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i] as char);
+        i += 1;
+    }
+    out
+}
+
+fn hex_val(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
+}
+
+fn base64_encode(data: &[u8]) -> String {
+    const TABLE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
+        let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
+        let n = (b0 << 16) | (b1 << 8) | b2;
+        out.push(TABLE[((n >> 18) & 63) as usize] as char);
+        out.push(TABLE[((n >> 12) & 63) as usize] as char);
+        out.push(if chunk.len() > 1 { TABLE[((n >> 6) & 63) as usize] as char } else { '=' });
+        out.push(if chunk.len() > 2 { TABLE[(n & 63) as usize] as char } else { '=' });
+    }
+    out
+}
+
+fn slog(msg: &str) {
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("d:/tmp/servo_log.txt") {
+        let _ = writeln!(f, "[servo] {msg}");
     }
 }
 
@@ -164,6 +235,7 @@ pub struct ServoView {
     pub rendering_context: Rc<WindowRenderingContext>,
     pub toolbar_height_phys: u32,
     child_hwnd: isize,
+    parent_hwnd: isize,
     state: Rc<ServoState>,
 }
 
@@ -248,12 +320,15 @@ impl ServoView {
         webview.focus();
         webview.show();
 
+        slog(&format!("ServoView initialized — child_hwnd={child_hwnd}, size={win_width}x{win_height}, toolbar_h={toolbar_height_phys}, dpr={scale_factor}"));
+
         Ok(Self {
             servo,
             webview,
             rendering_context,
             toolbar_height_phys,
             child_hwnd,
+            parent_hwnd,
             state,
         })
     }
@@ -270,12 +345,10 @@ impl ServoView {
     pub fn paint_if_needed(&self) -> bool {
         if self.state.needs_paint.get() {
             self.state.needs_paint.set(false);
-            // make_current() must be called before each paint — EGL context may have been
-            // stolen by the wry toolbar WebView between frames.
-            let _ = self.rendering_context.make_current();
+            let mc = self.rendering_context.make_current();
+            if mc.is_err() { slog(&format!("make_current FAILED: {:?}", mc)); }
             self.webview.paint();
             self.rendering_context.present();
-            // Bring child HWND to top so it isn't covered by wry toolbar backing layer.
             self.bring_to_front();
             true
         } else {
@@ -283,21 +356,49 @@ impl ServoView {
         }
     }
 
-    /// Raise the child HWND above other child windows so Servo content is visible.
+    /// Order child HWNDs: Servo below toolbar, toolbar on top.
+    /// Strategy: put Servo at HWND_TOP first, then put all other child windows
+    /// (wry toolbar) above Servo so toolbar remains visible.
     fn bring_to_front(&self) {
         #[cfg(windows)]
         unsafe {
+            use windows_sys::Win32::Foundation::HWND;
             use windows_sys::Win32::UI::WindowsAndMessaging::{
-                SetWindowPos, SWP_NOMOVE, SWP_NOSIZE, SWP_NOACTIVATE,
+                GetWindow, SetWindowPos,
+                SWP_NOMOVE, SWP_NOSIZE, SWP_NOACTIVATE, GW_CHILD, GW_HWNDNEXT,
             };
-            // HWND_TOP = 0 — places window at top of Z-order among siblings.
-            const HWND_TOP: windows_sys::Win32::Foundation::HWND = 0isize as _;
+
+            // First put Servo at bottom of Z-order (HWND_BOTTOM = 1).
+            const HWND_BOTTOM: HWND = 1isize as _;
             SetWindowPos(
-                self.child_hwnd as windows_sys::Win32::Foundation::HWND,
-                HWND_TOP,
+                self.child_hwnd as HWND,
+                HWND_BOTTOM,
                 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
             );
+
+            // Then raise all wry child windows (not our Servo HWND) to top.
+            // Walk sibling HWNDs and push non-Servo ones to HWND_TOP.
+            const HWND_TOP: HWND = 0isize as _;
+            let mut sibling = GetWindow(self.parent_hwnd as HWND, GW_CHILD);
+            let mut count = 0;
+            while sibling != 0 as _ {
+                count += 1;
+                if sibling as isize != self.child_hwnd {
+                    SetWindowPos(
+                        sibling,
+                        HWND_TOP,
+                        0, 0, 0, 0,
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+                    );
+                }
+                sibling = GetWindow(sibling, GW_HWNDNEXT);
+            }
+            // Log only on first few calls
+            static LOGGED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+            if LOGGED.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 3 {
+                slog(&format!("bring_to_front: child count={count}, servo_hwnd={}", self.child_hwnd));
+            }
         }
     }
 
@@ -331,6 +432,15 @@ impl ServoView {
 
     pub fn navigate(&self, url: &str) {
         if let Ok(parsed) = ServoUrl::parse(url) {
+            self.webview.load(parsed.into_url());
+        }
+    }
+
+    /// Load raw HTML into Servo via a data: URL.
+    pub fn load_html(&self, html: &str) {
+        let encoded = base64_encode(html.as_bytes());
+        let data_url = format!("data:text/html;base64,{}", encoded);
+        if let Ok(parsed) = ServoUrl::parse(&data_url) {
             self.webview.load(parsed.into_url());
         }
     }

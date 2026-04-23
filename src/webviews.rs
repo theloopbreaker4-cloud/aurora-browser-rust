@@ -22,6 +22,7 @@ pub fn build_toolbar_webview(
     WebViewBuilder::new()
         .with_bounds(bounds)
         .with_html(&toolbar::get_toolbar_html())
+        .with_transparent(true)
         .with_ipc_handler(move |req: wry::http::Request<String>| {
             // Toolbar sends raw messages without token prefix
             let msg = req.body().trim_matches('"').to_string();
