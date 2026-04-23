@@ -43,7 +43,10 @@ default = []
 servo-engine = ["dep:servo", "dep:dpi", "dep:keyboard-types", "dep:windows-sys", "dep:euclid"]
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation", "Win32_System_LibraryLoader"], optional = true }
+windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation", "Win32_System_LibraryLoader", "Win32_Graphics_Gdi", "Win32_Graphics_OpenGL"], optional = true }
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
+
+[patch.crates-io]
+wry = { path = "wry-patched" }

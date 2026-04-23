@@ -101,6 +101,6 @@ body{
 
 <script>
 const IPC_TOKEN = "__IPC_TOKEN__";
-function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+function ipcSend(msg){ if(window.ipc){ window.ipc.postMessage(IPC_TOKEN+":"+msg); } else { window.location.href="aurora-ipc:"+encodeURIComponent(IPC_TOKEN+":"+msg); } }
 </script>
 </body></html>

@@ -94,7 +94,7 @@ button.primary{
 const IPC_TOKEN = "__IPC_TOKEN__";
 const ERROR_INFO = __ERROR_JSON__;
 
-function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+function ipcSend(msg){ if(window.ipc){ window.ipc.postMessage(IPC_TOKEN+":"+msg); } else { window.location.href="aurora-ipc:"+encodeURIComponent(IPC_TOKEN+":"+msg); } }
 function reload(){ ipcSend("navigate:"+ERROR_INFO.url); }
 function goBack(){ ipcSend("back"); window.history.back(); }
 function goHome(){ ipcSend("navigate:aurora://newtab"); }

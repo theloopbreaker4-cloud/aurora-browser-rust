@@ -18,6 +18,13 @@ use tao::window::{CursorIcon, Fullscreen, WindowBuilder};
 // Total height of the toolbar area in logical pixels (tab bar + nav bar + bookmark bar)
 const TOOLBAR_HEIGHT: u32 = 122;
 
+fn flog(msg: &str) {
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("d:/tmp/servo_log.txt") {
+        let _ = writeln!(f, "[app] {msg}");
+    }
+}
+
 pub fn run() {
     // Check for --engine=servo/webview2 CLI arg (set by SwitchEngine restart).
     // This overrides config.json to avoid race conditions on write/read.
@@ -50,6 +57,22 @@ pub fn run() {
     }
     let window = wb.build(&event_loop).expect("Failed to create window");
 
+    // Paint Win32 window background black so no white flash appears before Servo renders.
+    #[cfg(all(windows, feature = "servo-engine"))]
+    {
+        use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+        use windows_sys::Win32::UI::WindowsAndMessaging::{SetClassLongPtrW, GCLP_HBRBACKGROUND};
+        use windows_sys::Win32::Graphics::Gdi::{GetStockObject, BLACK_BRUSH};
+        if let Ok(wh) = window.window_handle() {
+            if let RawWindowHandle::Win32(h) = wh.as_raw() {
+                unsafe {
+                    let black_brush = GetStockObject(BLACK_BRUSH as i32);
+                    SetClassLongPtrW(h.hwnd.get() as _, GCLP_HBRBACKGROUND, black_brush as isize);
+                }
+            }
+        }
+    }
+
     let size = window.inner_size().to_logical::<u32>(window.scale_factor());
     let toolbar_bounds = webviews::toolbar_bounds(size.width, TOOLBAR_HEIGHT);
 
@@ -73,7 +96,8 @@ pub fn run() {
         let dpr = window.scale_factor();
         let toolbar_phys = (TOOLBAR_HEIGHT as f64 * dpr) as u32;
         let url = if startup_url.starts_with("aurora://") {
-            "https://www.google.com".to_string()
+            // Aurora internal pages load via load_html after init — use blank for now
+            "about:blank".to_string()
         } else {
             startup_url.clone()
         };
@@ -87,7 +111,13 @@ pub fn run() {
             dpr,
         ) {
             Ok(sv) => {
-                let _ = proxy.send_event(UserEvent::UpdateUrl(url.clone()));
+                // If startup is an aurora:// page, load it via load_html
+                if startup_url.starts_with("aurora://") {
+                    sv.load_html(&webviews::portal_html(&ipc_token));
+                    let _ = proxy.send_event(UserEvent::UpdateUrl("aurora://newtab".to_string()));
+                } else {
+                    let _ = proxy.send_event(UserEvent::UpdateUrl(url.clone()));
+                }
                 Some(sv)
             }
             Err(e) => {
@@ -382,12 +412,90 @@ pub fn run() {
                     }
                 }
 
+                // AuroraIpc: IPC message from aurora:// page running inside Servo
+                #[cfg(feature = "servo-engine")]
+                if let UserEvent::AuroraIpc(msg) = user_event {
+                    // Strip IPC token prefix (format: "TOKEN:message")
+                    let msg = if let Some(pos) = msg.find(':') { &msg[pos+1..] } else { msg.as_str() };
+                    if let Some(engine) = msg.strip_prefix("switch_engine:") {
+                        let engine = engine.to_string();
+                        if !current_url.starts_with("aurora://") {
+                            crate::config::set_last_url(&current_url);
+                        }
+                        crate::config::set_engine(&engine);
+                        if let Ok(exe) = std::env::current_exe() {
+                            flog(&format!("switch_engine: spawning {:?} --engine={}", exe, engine));
+                            match Command::new(&exe).arg(format!("--engine={}", engine)).spawn() {
+                                Ok(_) => {
+                                    flog("switch_engine: spawn OK, sleeping 500ms");
+                                    std::thread::sleep(std::time::Duration::from_millis(500));
+                                }
+                                Err(e) => flog(&format!("switch_engine: spawn FAILED: {e}")),
+                            }
+                        } else {
+                            flog("switch_engine: current_exe() failed");
+                        }
+                        flog("switch_engine: calling force_exit");
+                        crate::servo_view::ServoView::force_exit();
+                    } else if msg == "app:restart" {
+                        if let Ok(exe) = std::env::current_exe() {
+                            if let Ok(_child) = Command::new(&exe).spawn() {
+                                std::thread::sleep(std::time::Duration::from_millis(300));
+                            }
+                        }
+                        crate::servo_view::ServoView::force_exit();
+                    } else if let Some(rest) = msg.strip_prefix("config:") {
+                        let parts: Vec<&str> = rest.splitn(2, ':').collect();
+                        if parts.len() == 2 {
+                            let dir = crate::config::exe_dir();
+                            let config_path = dir.join("config.json");
+                            let config_str = std::fs::read_to_string(&config_path)
+                                .unwrap_or_else(|_| "{}".to_string());
+                            let new_config = crate::config::update_config_value(&config_str, parts[0], parts[1]);
+                            let _ = std::fs::write(&config_path, &new_config);
+                            let _ = std::fs::write("config.json", &new_config);
+                        }
+                    }
+                    return;
+                }
+
                 // When Servo is active, forward navigation/input to it
                 #[cfg(feature = "servo-engine")]
                 if let Some(ref sv) = servo_view {
                     match user_event {
                         UserEvent::Navigate(url) if !url.starts_with("aurora://") => {
                             sv.navigate(url);
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
+                        UserEvent::Navigate(url) if url == "aurora://settings" => {
+                            sv.load_html(&settings::get_settings_html(&ipc_token));
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
+                        UserEvent::Navigate(url) if url == "aurora://history" => {
+                            sv.load_html(&history::get_history_html(&ipc_token));
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
+                        UserEvent::Navigate(url) if url == "aurora://bookmarks" => {
+                            sv.load_html(&bookmarks_page::get_bookmarks_html(&ipc_token));
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
+                        UserEvent::Navigate(url) if url == "aurora://downloads" => {
+                            sv.load_html(&downloads_page::get_downloads_html(&ipc_token));
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
+                        UserEvent::Navigate(url) if url == "aurora://about" => {
+                            sv.load_html(&about::get_about_html(&ipc_token));
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
+                        UserEvent::Navigate(url) if url == "aurora://newtab" || url == "aurora://portal" => {
+                            sv.load_html(&portal_html_for_loop);
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl("aurora://newtab".to_string()));
                             return;
                         }
                         UserEvent::GoBack    => { sv.go_back();    return; }
@@ -558,19 +666,25 @@ pub fn run() {
 
                         if let Ok(exe) = std::env::current_exe() {
                             let mut cmd = Command::new(&exe);
-                            // Pass engine as --engine=servo so new process doesn't
-                            // rely on reading config.json (avoids race condition on flush)
                             cmd.arg(format!("--engine={}", engine));
                             if !current_url.starts_with("aurora://") {
                                 cmd.arg(&current_url);
                             }
-                            let _ = cmd.spawn();
+                            if let Ok(_child) = cmd.spawn() {
+                                std::thread::sleep(std::time::Duration::from_millis(300));
+                            }
+                        }
+                        #[cfg(feature = "servo-engine")]
+                        if servo_view.is_some() {
+                            crate::servo_view::ServoView::force_exit();
                         }
                         *control_flow = ControlFlow::Exit;
                     }
 
                     #[cfg(feature = "servo-engine")]
                     UserEvent::ServoWake => { /* handled above */ }
+                    #[cfg(feature = "servo-engine")]
+                    UserEvent::AuroraIpc(_) => { /* handled above */ }
                 }
             }
 

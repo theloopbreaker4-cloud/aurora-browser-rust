@@ -81,7 +81,7 @@ h1{font-size:28px;font-weight:600;color:#7fffd4;letter-spacing:0.5px}
 const IPC_TOKEN = "__IPC_TOKEN__";
 let DOWNLOADS = __DOWNLOADS_JSON__;
 
-function ipcSend(msg){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+function ipcSend(msg){ if(window.ipc){ window.ipc.postMessage(IPC_TOKEN+":"+msg); } else { window.location.href="aurora-ipc:"+encodeURIComponent(IPC_TOKEN+":"+msg); } }
 
 const EXT_COLORS={
     pdf:{bg:'rgba(180,40,40,0.12)',color:'#f08080',label:'PDF'},
