@@ -26,10 +26,10 @@ use raw_window_handle::{
 };
 use servo::{
     DeviceIndependentPixel, DevicePoint, EventLoopWaker, InputEvent,
-    KeyboardEvent as ServoKeyboardEvent, MouseButton as ServoMouseButton, MouseButtonAction,
-    MouseButtonEvent, MouseMoveEvent, NavigationRequest, RenderingContext, ServoBuilder, ServoUrl,
-    WebView, WebViewBuilder, WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode,
-    WindowRenderingContext,
+    KeyboardEvent as ServoKeyboardEvent, LoadStatus, MouseButton as ServoMouseButton,
+    MouseButtonAction, MouseButtonEvent, MouseMoveEvent, NavigationRequest, RenderingContext,
+    ServoBuilder, ServoUrl, WebView, WebViewBuilder, WebViewDelegate, WebViewPoint, WheelDelta,
+    WheelEvent, WheelMode, WindowRenderingContext,
 };
 use euclid::Scale;
 use tao::event_loop::EventLoopProxy;
@@ -137,9 +137,41 @@ struct AuroraDelegate {
 
 impl WebViewDelegate for AuroraDelegate {
     fn notify_new_frame_ready(&self, _webview: WebView) {
-        slog("notify_new_frame_ready — needs_paint = true");
+        // Throttled logging — first 5 frames only, otherwise this fills the log fast.
+        let n = FRAME_LOG_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if n < 5 {
+            slog(&format!("notify_new_frame_ready (#{n}) — needs_paint = true"));
+        }
         self.state.needs_paint.set(true);
         let _ = self.state.proxy.send_event(UserEvent::ServoWake);
+    }
+
+    fn notify_page_title_changed(&self, _webview: WebView, title: Option<String>) {
+        if let Some(t) = title {
+            let _ = self.state.proxy.send_event(UserEvent::UpdateTitle(t));
+        }
+    }
+
+    fn notify_load_status_changed(&self, webview: WebView, status: LoadStatus) {
+        match status {
+            LoadStatus::Started => {
+                let _ = self.state.proxy.send_event(UserEvent::LoadStart);
+            }
+            LoadStatus::Complete => {
+                let _ = self.state.proxy.send_event(UserEvent::LoadEnd);
+                if let Some(url) = webview.url() {
+                    let url_s = url.to_string();
+                    let _ = self
+                        .state
+                        .proxy
+                        .send_event(UserEvent::UpdateUrl(url_s.clone()));
+                    // Push history (helper skips aurora:// and data: URLs internally)
+                    let title = webview.page_title().unwrap_or_default();
+                    crate::history::push_history_entry(&title, &url_s);
+                }
+            }
+            _ => {}
+        }
     }
 
     fn request_navigation(&self, _webview: WebView, request: NavigationRequest) {
@@ -206,9 +238,13 @@ fn base64_encode(data: &[u8]) -> String {
     out
 }
 
+/// Counts notify_new_frame_ready calls so we only log the first few.
+static FRAME_LOG_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
 fn slog(msg: &str) {
     use std::io::Write;
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("d:/tmp/servo_log.txt") {
+    let path = crate::config::exe_dir().join("servo_log.txt");
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
         let _ = writeln!(f, "[servo] {msg}");
     }
 }

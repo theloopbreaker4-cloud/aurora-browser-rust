@@ -20,7 +20,8 @@ const TOOLBAR_HEIGHT: u32 = 122;
 
 fn flog(msg: &str) {
     use std::io::Write;
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("d:/tmp/servo_log.txt") {
+    let path = crate::config::exe_dir().join("servo_log.txt");
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
         let _ = writeln!(f, "[app] {msg}");
     }
 }
