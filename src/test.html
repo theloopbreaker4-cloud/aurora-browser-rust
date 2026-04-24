@@ -145,9 +145,22 @@ const TESTS = {
         ['backdrop-filter', () => CSS.supports?.('backdrop-filter', 'blur(2px)') === true],
     ],
     api: [
-        ['localStorage', () => { try { localStorage.setItem('_t','1'); const ok = localStorage.getItem('_t') === '1'; localStorage.removeItem('_t'); return ok; } catch { return false; } }],
-        ['sessionStorage', () => { try { sessionStorage.setItem('_t','1'); return sessionStorage.getItem('_t') === '1'; } catch { return false; } }],
-        ['IndexedDB', () => typeof indexedDB === 'object' && indexedDB !== null],
+        ['localStorage', () => { try { localStorage.setItem('_t','1'); const ok = localStorage.getItem('_t') === '1'; localStorage.removeItem('_t'); return ok; } catch (e) { if (String(e).includes('opaque') || String(e).includes('SecurityError')) throw new Error('opaque origin (page loaded as data: URL) — feature itself OK'); return false; } }],
+        ['sessionStorage', () => { try { sessionStorage.setItem('_t','1'); return sessionStorage.getItem('_t') === '1'; } catch (e) { if (String(e).includes('opaque') || String(e).includes('SecurityError')) throw new Error('opaque origin (page loaded as data: URL) — feature itself OK'); return false; } }],
+        ['IndexedDB', () => {
+            if (typeof indexedDB !== 'object' || indexedDB === null) return false;
+            // Try a real open to surface opaque-origin restriction.
+            try {
+                const req = indexedDB.open('_t', 1);
+                if (!req) return false;
+                return true;
+            } catch (e) {
+                if (String(e).includes('opaque') || String(e).includes('SecurityError')) {
+                    throw new Error('opaque origin (page loaded as data: URL) — IndexedDB API present');
+                }
+                return false;
+            }
+        }],
         ['Cookies', () => typeof document.cookie === 'string'],
         ['Web Crypto', () => typeof crypto?.subtle?.digest === 'function'],
         ['crypto.randomUUID', () => typeof crypto?.randomUUID === 'function'],
