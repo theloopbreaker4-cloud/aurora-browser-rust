@@ -167,6 +167,16 @@ pub fn build_content_webview(
                 }
             } else if let Some(text) = msg.strip_prefix("find:") {
                 let _ = proxy_content.send_event(UserEvent::FindText(text.to_string()));
+            } else if let Some(rest) = msg.strip_prefix("bookmark:add:") {
+                // Format: "bookmark:add:<title>:<url>" (url itself may contain ':')
+                if let Some((title, url)) = rest.split_once(':') {
+                    config::add_bookmark(title, url);
+                }
+            } else if let Some(title) = msg.strip_prefix("bookmark:remove:") {
+                config::remove_bookmark(title);
+            } else if let Some(json) = msg.strip_prefix("bookmark:import:") {
+                // Replace whole bookmark set from JSON payload (validated client-side).
+                config::set_bookmarks_raw(json);
             } else if let Some(rest) = msg.strip_prefix("history:push:") {
                 if let Ok(entry) = serde_json::from_str::<serde_json::Value>(rest) {
                     let title = entry.get("title").and_then(|v| v.as_str()).unwrap_or("");

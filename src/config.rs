@@ -139,10 +139,31 @@ pub fn add_bookmark(title: &str, url: &str) {
     if let Value::Object(ref mut map) = root {
         map.insert(title.to_string(), Value::String(url.to_string()));
     }
-    if let Ok(json) = serde_json::to_string_pretty(&root) {
-        let dir = exe_dir();
-        let _ = std::fs::write(dir.join("bookmarks.json"), &json);
-        let _ = std::fs::write("bookmarks.json", &json);
+    write_bookmarks_value(&root);
+}
+
+/// Removes a bookmark entry by title (key) from bookmarks.json.
+pub fn remove_bookmark(title: &str) {
+    let current = load_bookmarks();
+    let mut root: Value =
+        serde_json::from_str(&current).unwrap_or_else(|_| Value::Object(Default::default()));
+    if let Value::Object(ref mut map) = root {
+        map.remove(title);
+    }
+    write_bookmarks_value(&root);
+}
+
+/// Replaces the entire bookmarks file with the supplied JSON string.
+/// Caller is responsible for ensuring `json` is a valid object of {title: url}.
+pub fn set_bookmarks_raw(json: &str) {
+    let dir = exe_dir();
+    let _ = std::fs::write(dir.join("bookmarks.json"), json);
+    let _ = std::fs::write("bookmarks.json", json);
+}
+
+fn write_bookmarks_value(v: &Value) {
+    if let Ok(json) = serde_json::to_string_pretty(v) {
+        set_bookmarks_raw(&json);
     }
 }
 

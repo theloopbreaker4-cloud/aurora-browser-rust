@@ -97,6 +97,9 @@ h1{font-size:28px;font-weight:600;color:#7fffd4;letter-spacing:0.5px}
             <input class="search-input" id="searchInput" placeholder="Search bookmarks..." oninput="filterBm(this.value)">
         </div>
         <button class="btn-add" onclick="openAdd()">+ Add</button>
+        <button class="btn-add" onclick="exportBookmarks()" title="Download bookmarks.json">↓ Export</button>
+        <button class="btn-add" onclick="document.getElementById('importFile').click()" title="Import bookmarks.json">↑ Import</button>
+        <input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importBookmarks(this)">
     </div>
     <div class="bm-grid" id="bmGrid"></div>
 </div>
@@ -177,6 +180,42 @@ function saveBookmark(){
 }
 
 document.getElementById('addUrl').addEventListener('keydown',e=>{ if(e.key==='Enter') saveBookmark(); });
+
+function exportBookmarks(){
+    const obj = Object.fromEntries(BM.map(b => [b.title, b.url]));
+    const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'aurora-bookmarks.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+}
+
+function importBookmarks(input){
+    const f = input.files && input.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const data = JSON.parse(reader.result);
+            // Accept either a flat {title:url} object or an array of {title,url}.
+            let merged = Object.fromEntries(BM.map(b => [b.title, b.url]));
+            if (Array.isArray(data)) {
+                data.forEach(b => { if (b && b.title && b.url) merged[b.title] = b.url; });
+            } else if (data && typeof data === 'object') {
+                Object.entries(data).forEach(([k,v]) => { if (typeof v === 'string') merged[k] = v; });
+            }
+            BM = Object.entries(merged).map(([t,u]) => ({title:t, url:u}));
+            filterBm(document.getElementById('searchInput').value);
+            ipcSend('bookmark:import:' + JSON.stringify(merged));
+        } catch (e) {
+            alert('Import failed: ' + e.message);
+        }
+        input.value = '';
+    };
+    reader.readAsText(f);
+}
 
 render(BM);
 </script>
