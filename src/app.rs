@@ -48,6 +48,17 @@ pub fn run() {
     let proxy = event_loop.create_proxy();
     let ipc_token = generate_ipc_token();
 
+    // Internal HTTP server on 127.0.0.1: serves aurora:// internal pages over a
+    // real http origin so localStorage / IndexedDB / SecureContext APIs work
+    // (data: URLs always have an opaque origin, which the spec disallows).
+    // Used only by Servo; wry continues to receive HTML via load_html.
+    let internal_server_port = match crate::internal_server::start_with_default_routes(&ipc_token) {
+        Ok(s) => Some(s.port),
+        Err(_) => None,
+    };
+    let aurora_origin =
+        internal_server_port.map(|p| format!("http://127.0.0.1:{}", p));
+
     // Build the main window
     let mut wb = WindowBuilder::new()
         .with_title("Aurora Browser")
@@ -96,9 +107,17 @@ pub fn run() {
         let phys = window.inner_size();
         let dpr = window.scale_factor();
         let toolbar_phys = (TOOLBAR_HEIGHT as f64 * dpr) as u32;
+        // For aurora:// startup URLs, route through the loopback HTTP server
+        // (real http origin so localStorage etc work). Falls back to about:blank
+        // if the server failed to start; the load_html path below will take over.
         let url = if startup_url.starts_with("aurora://") {
-            // Aurora internal pages load via load_html after init — use blank for now
-            "about:blank".to_string()
+            if let Some(ref origin) = aurora_origin {
+                let path = startup_url.strip_prefix("aurora://").unwrap_or("newtab");
+                let canonical = if path.is_empty() || path == "portal" { "newtab" } else { path };
+                format!("{}/{}", origin, canonical)
+            } else {
+                "about:blank".to_string()
+            }
         } else {
             startup_url.clone()
         };
@@ -112,9 +131,12 @@ pub fn run() {
             dpr,
         ) {
             Ok(sv) => {
-                // If startup is an aurora:// page, load it via load_html
                 if startup_url.starts_with("aurora://") {
-                    sv.load_html(&webviews::portal_html(&ipc_token));
+                    if aurora_origin.is_none() {
+                        // No internal server -> fall back to embedding via load_html.
+                        sv.load_html(&webviews::portal_html(&ipc_token));
+                    }
+                    // Toolbar should display the aurora:// URL even if Servo loaded the http alias.
                     let _ = proxy.send_event(UserEvent::UpdateUrl("aurora://newtab".to_string()));
                 } else {
                     let _ = proxy.send_event(UserEvent::UpdateUrl(url.clone()));
@@ -473,54 +495,42 @@ pub fn run() {
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                             return;
                         }
-                        UserEvent::Navigate(url) if url == "aurora://settings" => {
-                            sv.load_html(&settings::get_settings_html(&ipc_token));
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://history" => {
-                            sv.load_html(&history::get_history_html(&ipc_token));
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://bookmarks" => {
-                            sv.load_html(&bookmarks_page::get_bookmarks_html(&ipc_token));
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://downloads" => {
-                            sv.load_html(&downloads_page::get_downloads_html(&ipc_token));
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://about" => {
-                            sv.load_html(&about::get_about_html(&ipc_token));
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://test" => {
-                            sv.load_html(&crate::test_page::get_test_html());
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://extensions" => {
-                            sv.load_html(&crate::extensions::get_extensions_html(&ipc_token));
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://incognito" => {
-                            sv.load_html(&crate::incognito::get_incognito_html(&ipc_token));
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://tab_groups" => {
-                            sv.load_html(&crate::tab_groups::get_tab_groups_html(&ipc_token));
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
-                            return;
-                        }
-                        UserEvent::Navigate(url) if url == "aurora://newtab" || url == "aurora://portal" => {
-                            sv.load_html(&portal_html_for_loop);
-                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl("aurora://newtab".to_string()));
+                        UserEvent::Navigate(url) if url.starts_with("aurora://") => {
+                            // Prefer routing aurora:// internal pages through the loopback
+                            // HTTP server so they get a real (tuple) http origin and have
+                            // localStorage / IndexedDB / SecureContext available. Fall back
+                            // to load_html (data: URL, opaque origin) only if the server
+                            // failed to start.
+                            let path = url.strip_prefix("aurora://").unwrap_or("");
+                            let canonical = if path.is_empty() || path == "portal" {
+                                "newtab".to_string()
+                            } else {
+                                path.to_string()
+                            };
+                            if let Some(ref origin) = aurora_origin {
+                                sv.navigate(&format!("{}/{}", origin, canonical));
+                            } else {
+                                // Fallback path — same as before, just with all routes in one match.
+                                let html = match canonical.as_str() {
+                                    "settings" => settings::get_settings_html(&ipc_token),
+                                    "history" => history::get_history_html(&ipc_token),
+                                    "bookmarks" => bookmarks_page::get_bookmarks_html(&ipc_token),
+                                    "downloads" => downloads_page::get_downloads_html(&ipc_token),
+                                    "about" => about::get_about_html(&ipc_token),
+                                    "test" => crate::test_page::get_test_html(),
+                                    "extensions" => crate::extensions::get_extensions_html(&ipc_token),
+                                    "incognito" => crate::incognito::get_incognito_html(&ipc_token),
+                                    "tab_groups" => crate::tab_groups::get_tab_groups_html(&ipc_token),
+                                    _ => portal_html_for_loop.clone(),
+                                };
+                                sv.load_html(&html);
+                            }
+                            let display_url = if canonical == "newtab" {
+                                "aurora://newtab".to_string()
+                            } else {
+                                format!("aurora://{}", canonical)
+                            };
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(display_url));
                             return;
                         }
                         UserEvent::GoBack    => { sv.go_back();    return; }
