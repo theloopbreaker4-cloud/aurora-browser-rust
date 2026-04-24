@@ -25,7 +25,7 @@ use raw_window_handle::{
     Win32WindowHandle, WindowHandle, WindowsDisplayHandle,
 };
 use servo::{
-    DeviceIndependentPixel, DevicePoint, EventLoopWaker, InputEvent,
+    Cursor as ServoCursor, DeviceIndependentPixel, DevicePoint, EventLoopWaker, InputEvent,
     KeyboardEvent as ServoKeyboardEvent, LoadStatus, MouseButton as ServoMouseButton,
     MouseButtonAction, MouseButtonEvent, MouseMoveEvent, NavigationRequest, RenderingContext,
     ServoBuilder, ServoUrl, WebView, WebViewBuilder, WebViewDelegate, WebViewPoint, WheelDelta,
@@ -152,6 +152,11 @@ impl WebViewDelegate for AuroraDelegate {
         }
     }
 
+    fn notify_cursor_changed(&self, _webview: WebView, cursor: ServoCursor) {
+        let mapped = map_servo_cursor(cursor);
+        let _ = self.state.proxy.send_event(UserEvent::SetCursor(mapped));
+    }
+
     fn notify_load_status_changed(&self, webview: WebView, status: LoadStatus) {
         match status {
             LoadStatus::Started => {
@@ -240,6 +245,50 @@ fn base64_encode(data: &[u8]) -> String {
 
 /// Counts notify_new_frame_ready calls so we only log the first few.
 static FRAME_LOG_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// Map Servo's CSS-derived cursor to tao's window CursorIcon, which tao forwards
+/// to the platform (Win32 SetCursor / Cocoa NSCursor / GTK). Returns None to
+/// request a hidden cursor (Cursor::None).
+fn map_servo_cursor(cursor: ServoCursor) -> Option<tao::window::CursorIcon> {
+    use tao::window::CursorIcon;
+    Some(match cursor {
+        ServoCursor::None => return None,
+        ServoCursor::Default => CursorIcon::Default,
+        ServoCursor::Pointer => CursorIcon::Hand,
+        ServoCursor::ContextMenu => CursorIcon::ContextMenu,
+        ServoCursor::Help => CursorIcon::Help,
+        ServoCursor::Progress => CursorIcon::Progress,
+        ServoCursor::Wait => CursorIcon::Wait,
+        ServoCursor::Cell => CursorIcon::Cell,
+        ServoCursor::Crosshair => CursorIcon::Crosshair,
+        ServoCursor::Text => CursorIcon::Text,
+        ServoCursor::VerticalText => CursorIcon::VerticalText,
+        ServoCursor::Alias => CursorIcon::Alias,
+        ServoCursor::Copy => CursorIcon::Copy,
+        ServoCursor::Move => CursorIcon::Move,
+        ServoCursor::NoDrop => CursorIcon::NoDrop,
+        ServoCursor::NotAllowed => CursorIcon::NotAllowed,
+        ServoCursor::Grab => CursorIcon::Grab,
+        ServoCursor::Grabbing => CursorIcon::Grabbing,
+        ServoCursor::EResize => CursorIcon::EResize,
+        ServoCursor::NResize => CursorIcon::NResize,
+        ServoCursor::NeResize => CursorIcon::NeResize,
+        ServoCursor::NwResize => CursorIcon::NwResize,
+        ServoCursor::SResize => CursorIcon::SResize,
+        ServoCursor::SeResize => CursorIcon::SeResize,
+        ServoCursor::SwResize => CursorIcon::SwResize,
+        ServoCursor::WResize => CursorIcon::WResize,
+        ServoCursor::EwResize => CursorIcon::EwResize,
+        ServoCursor::NsResize => CursorIcon::NsResize,
+        ServoCursor::NeswResize => CursorIcon::NeswResize,
+        ServoCursor::NwseResize => CursorIcon::NwseResize,
+        ServoCursor::ColResize => CursorIcon::ColResize,
+        ServoCursor::RowResize => CursorIcon::RowResize,
+        ServoCursor::AllScroll => CursorIcon::AllScroll,
+        ServoCursor::ZoomIn => CursorIcon::ZoomIn,
+        ServoCursor::ZoomOut => CursorIcon::ZoomOut,
+    })
+}
 
 fn slog(msg: &str) {
     use std::io::Write;

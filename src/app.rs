@@ -670,6 +670,17 @@ pub fn run() {
                         *control_flow = ControlFlow::Exit;
                     }
 
+                    UserEvent::SetCursor(cursor) => {
+                        match cursor {
+                            Some(icon) => {
+                                window.set_cursor_visible(true);
+                                window.set_cursor_icon(*icon);
+                            }
+                            None => {
+                                window.set_cursor_visible(false);
+                            }
+                        }
+                    }
                     UserEvent::ApplyTheme(theme) => {
                         let esc = theme.replace('\\', "\\\\").replace('\'', "\\'");
                         let _ = toolbar_webview.evaluate_script(&format!(
