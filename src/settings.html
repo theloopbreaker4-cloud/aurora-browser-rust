@@ -56,30 +56,30 @@ button:disabled{opacity:0.45;cursor:default;box-shadow:none}
 .engine-card small { font-size:10px;color:#3a6070; }
 </style></head><body>
 <div class="page">
-<h1>Aurora Settings</h1>
-<div class="subhead">Clean defaults, minimal noise.</div>
+<h1 data-i18n="settings_title">Aurora Settings</h1>
+<div class="subhead" data-i18n="settings_subhead">Clean defaults, minimal noise.</div>
 
 
 <div class="section">
-    <div class="section-title">Startup</div>
+    <div class="section-title" data-i18n="section_startup">Startup</div>
     <div class="row">
-        <div><div class="row-label">On startup</div><div class="row-desc">Choose what opens when Aurora starts.</div></div>
+        <div><div class="row-label" data-i18n="label_on_startup">On startup</div><div class="row-desc" data-i18n="desc_on_startup">Choose what opens when Aurora starts.</div></div>
         <select id="startupSelect" onchange="changeStartup(this.value)">
-            <option value="newtab">Open New Tab</option>
-            <option value="continue">Continue where you left off</option>
-            <option value="home">Open home page</option>
+            <option value="newtab" data-i18n="open_newtab">Open New Tab</option>
+            <option value="continue" data-i18n="continue_session">Continue where you left off</option>
+            <option value="home" data-i18n="open_homepage">Open home page</option>
         </select>
     </div>
     <div class="row">
-        <div><div class="row-label">Home page</div><div class="row-desc">Used for Home button and when startup is set to home.</div></div>
+        <div><div class="row-label" data-i18n="label_homepage">Home page</div><div class="row-desc" data-i18n="desc_homepage">Used for Home button and when startup is set to home.</div></div>
         <input id="homeInput" type="text" placeholder="aurora://newtab" onblur="changeHome(this.value)" onkeydown="if(event.key==='Enter') this.blur()">
     </div>
 </div>
 
 <div class="section">
-    <div class="section-title">Language</div>
+    <div class="section-title" data-i18n="language">Language</div>
     <div class="row">
-        <div class="row-label">Interface Language</div>
+        <div class="row-label" data-i18n="label_interface_language">Interface Language</div>
         <select id="langSelect" onchange="changeLang(this.value)">
             <option value="en">English</option>
             <option value="es">Español</option>
@@ -92,9 +92,9 @@ button:disabled{opacity:0.45;cursor:default;box-shadow:none}
 </div>
 
 <div class="section">
-    <div class="section-title">Search Engine</div>
+    <div class="section-title" data-i18n="section_search">Search Engine</div>
     <div class="row">
-        <div><div class="row-label">Default Search</div><div class="row-desc">Used for the address bar and new tab search.</div></div>
+        <div><div class="row-label" data-i18n="label_default_search">Default Search</div><div class="row-desc" data-i18n="desc_default_search">Used for the address bar and new tab search.</div></div>
         <select id="searchSelect" onchange="changeSearch(this.value)">
             <option value="google">Google</option>
             <option value="duckduckgo">DuckDuckGo</option>
@@ -105,47 +105,47 @@ button:disabled{opacity:0.45;cursor:default;box-shadow:none}
 </div>
 
 <div class="section">
-    <div class="section-title">Downloads</div>
+    <div class="section-title" data-i18n="downloads">Downloads</div>
     <div class="row">
-        <div><div class="row-label">Download folder</div><div class="row-desc">Where files are saved by default.</div></div>
+        <div><div class="row-label" data-i18n="label_download_folder">Download folder</div><div class="row-desc" data-i18n="desc_download_folder">Where files are saved by default.</div></div>
         <input id="downloadInput" type="text" placeholder="Downloads" onblur="changeDownload(this.value)" onkeydown="if(event.key==='Enter') this.blur()">
     </div>
 </div>
 
 <div class="section">
-    <div class="section-title">Theme</div>
+    <div class="section-title" data-i18n="section_theme">Theme</div>
     <div class="row">
-        <div><div class="row-label">Appearance</div><div class="row-desc">Choose the browser theme. Sleep mode reduces blue light for night use.</div></div>
+        <div><div class="row-label" data-i18n="label_appearance">Appearance</div><div class="row-desc" data-i18n="desc_appearance">Choose the browser theme. Sleep mode reduces blue light for night use.</div></div>
         <div class="control" style="gap:8px">
             <div class="theme-card" id="theme-aurora-dark" onclick="changeTheme('aurora-dark')">
                 <div class="theme-preview" style="background:linear-gradient(135deg,#131c28,#1a2e3e)">
                     <div style="height:6px;background:#1a2332;border-radius:2px 2px 0 0"></div>
                     <div style="height:3px;background:#111820;margin-top:1px"></div>
                 </div>
-                <span>Dark</span>
+                <span data-i18n="theme_dark">Dark</span>
             </div>
             <div class="theme-card" id="theme-aurora-light" onclick="changeTheme('aurora-light')">
                 <div class="theme-preview" style="background:linear-gradient(135deg,#e8f4f4,#f0fafa)">
                     <div style="height:6px;background:#d0e8e8;border-radius:2px 2px 0 0"></div>
                     <div style="height:3px;background:#e0f0f0;margin-top:1px"></div>
                 </div>
-                <span>Light</span>
+                <span data-i18n="theme_light">Light</span>
             </div>
             <div class="theme-card" id="theme-aurora-sleep" onclick="changeTheme('aurora-sleep')">
                 <div class="theme-preview" style="background:linear-gradient(135deg,#0a0f18,#0d1520)">
                     <div style="height:6px;background:#080d14;border-radius:2px 2px 0 0"></div>
                     <div style="height:3px;background:#060b10;margin-top:1px"></div>
                 </div>
-                <span>Sleep</span>
+                <span data-i18n="theme_sleep">Sleep</span>
             </div>
         </div>
     </div>
 </div>
 
 <div class="section">
-    <div class="section-title">Browser Engine</div>
+    <div class="section-title" data-i18n="section_browser_engine">Browser Engine</div>
     <div class="row">
-        <div><div class="row-label">Rendering Engine</div><div class="row-desc">WebView2 is stable. Servo is experimental — some sites may not display correctly.</div></div>
+        <div><div class="row-label" data-i18n="label_rendering_engine">Rendering Engine</div><div class="row-desc" data-i18n="desc_rendering_engine">WebView2 is stable. Servo is experimental — some sites may not display correctly.</div></div>
         <div class="control" style="flex-direction:column;align-items:flex-end;gap:8px">
             <div style="display:flex;gap:8px">
                 <div class="engine-card" id="engine-webview2" onclick="changeEngine('webview2')">
@@ -159,36 +159,45 @@ button:disabled{opacity:0.45;cursor:default;box-shadow:none}
                     <small>Experimental · Rust</small>
                 </div>
             </div>
-            <div id="engineRestartNote" style="display:none;font-size:11px;color:#60a0a0">Restart Aurora to apply engine change</div>
+            <div id="engineRestartNote" style="display:none;font-size:11px;color:#60a0a0" data-i18n="engine_restart_note">Restart Aurora to apply engine change</div>
         </div>
     </div>
 </div>
 
 <div class="section">
-    <div class="section-title">Privacy</div>
+    <div class="section-title" data-i18n="privacy">Privacy</div>
     <div class="row">
-        <div><div class="row-label">Do Not Track</div><div class="row-desc">Request sites not to track you.</div></div>
+        <div><div class="row-label" data-i18n="label_dnt">Do Not Track</div><div class="row-desc" data-i18n="desc_dnt">Request sites not to track you.</div></div>
         <select id="dntSelect" onchange="changeDnt(this.value)">
-            <option value="on">On</option>
-            <option value="off">Off</option>
+            <option value="on" data-i18n="on">On</option>
+            <option value="off" data-i18n="off">Off</option>
         </select>
     </div>
 </div>
 
 <div class="section">
-    <div class="section-title">About Aurora</div>
+    <div class="section-title" data-i18n="section_about">About Aurora</div>
     <div class="row">
-        <div><div class="row-label">Version</div><div class="row-desc">Aurora Browser v0.1.0</div></div>
+        <div><div class="row-label" data-i18n="label_version">Version</div><div class="row-desc">Aurora Browser v0.3.0</div></div>
     </div>
     <div class="row">
-        <div><div class="row-label">Engine</div><div class="row-desc" id="currentEngine">WebView2 (Chromium)</div></div>
+        <div><div class="row-label" data-i18n="label_engine_in_use">Engine</div><div class="row-desc" id="currentEngine">WebView2 (Chromium)</div></div>
     </div>
 </div>
 
-<div class="version">Aurora Browser v0.1.0 - Built with Rust + wry</div>
+<div class="version">Aurora Browser v0.3.0 - Built with Rust + wry</div>
 </div>
 
 <script>
+// Apply translations from AURORA_LOCALE to all [data-i18n] elements.
+try {
+    const L = AURORA_LOCALE || {};
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const k = el.getAttribute('data-i18n');
+        if (L[k]) el.textContent = L[k];
+    });
+} catch(e){}
+
 try {
     const cfg = AURORA_CONFIG;
     if(cfg.language) document.getElementById('langSelect').value = cfg.language;
