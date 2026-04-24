@@ -493,6 +493,11 @@ pub fn run() {
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                             return;
                         }
+                        UserEvent::Navigate(url) if url == "aurora://test" => {
+                            sv.load_html(&crate::test_page::get_test_html());
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
                         UserEvent::Navigate(url) if url == "aurora://newtab" || url == "aurora://portal" => {
                             sv.load_html(&portal_html_for_loop);
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl("aurora://newtab".to_string()));
@@ -535,6 +540,11 @@ pub fn run() {
                         } else if url == "aurora://about" {
                             if let Some(ref cv) = content_webview_opt {
                                 let _ = cv.load_html(&about::get_about_html(&ipc_token));
+                            }
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                        } else if url == "aurora://test" {
+                            if let Some(ref cv) = content_webview_opt {
+                                let _ = cv.load_html(&crate::test_page::get_test_html());
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url.starts_with("aurora://error") {

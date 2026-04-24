@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Aurora Engine Tests</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a1220;color:#cfe0f0;font-family:'Segoe UI',sans-serif;padding:32px 56px;min-height:100vh}
+.page{max-width:1100px;margin:0 auto}
+h1{font-size:30px;font-weight:600;color:#7fffd4;margin-bottom:6px;letter-spacing:1px}
+.subhead{font-size:12px;color:#6f829c;margin-bottom:24px}
+.summary{
+    display:flex;gap:14px;margin-bottom:24px;padding:14px 18px;
+    background:rgba(12,18,34,0.92);border:1px solid rgba(60,80,120,0.25);border-radius:12px;
+    font-size:13px;
+}
+.summary .pill{padding:3px 10px;border-radius:999px;font-weight:600}
+.pill.pass{background:rgba(60,200,140,0.15);color:#7fffaa}
+.pill.fail{background:rgba(220,80,80,0.15);color:#ff8080}
+.pill.skip{background:rgba(200,180,60,0.12);color:#e0c060}
+.section{
+    background:rgba(12,18,34,0.92);border:1px solid rgba(60,80,120,0.25);border-radius:12px;
+    padding:18px 22px;margin-bottom:14px;
+}
+.section h2{font-size:14px;font-weight:700;color:#8da0be;margin-bottom:10px;letter-spacing:0.4px;text-transform:uppercase}
+.row{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:8px 0;border-bottom:1px solid rgba(60,80,120,0.1);
+    font-size:13px;
+}
+.row:last-child{border-bottom:none}
+.row .name{color:#c1cce0;flex:1;min-width:0}
+.row .name code{color:#80c0c0;font-size:12px;font-family:Consolas,monospace}
+.row .detail{color:#5f7390;font-size:11px;margin-top:2px;font-family:Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+.status{padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;flex-shrink:0;min-width:50px;text-align:center}
+.status.pass{background:rgba(60,200,140,0.15);color:#7fffaa}
+.status.fail{background:rgba(220,80,80,0.15);color:#ff8080}
+.status.skip{background:rgba(200,180,60,0.12);color:#e0c060}
+.status.run{background:rgba(80,160,200,0.15);color:#80c8ff}
+
+/* Visual test playgrounds — referenced by tests below */
+#vt-flex{display:flex;gap:6px;width:100px}
+#vt-flex>div{flex:1;height:18px;background:#3ca0a0}
+#vt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:100px}
+#vt-grid>div{height:18px;background:#3ca0a0}
+#vt-transform{width:30px;height:30px;background:#3ca0a0;transform:rotate(45deg) scale(0.8)}
+#vt-gradient{width:80px;height:20px;background:linear-gradient(90deg,#3ca0a0,#7fffd4)}
+.vt-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px}
+canvas{border:1px solid rgba(60,80,120,0.3);background:#000}
+</style></head><body>
+<div class="page">
+<h1>Aurora Engine Tests</h1>
+<div class="subhead">Auto-detect what works in the active rendering engine.</div>
+
+<div class="summary">
+    <span>Engine: <strong id="engineLabel">detecting...</strong></span>
+    <span>UA: <code id="uaLabel" style="font-size:11px;color:#7090a0"></code></span>
+    <span class="pill pass" id="sumPass">0 pass</span>
+    <span class="pill fail" id="sumFail">0 fail</span>
+    <span class="pill skip" id="sumSkip">0 skip</span>
+</div>
+
+<div class="section">
+    <h2>JavaScript runtime</h2>
+    <div id="js-tests"></div>
+</div>
+<div class="section">
+    <h2>DOM / Events</h2>
+    <div id="dom-tests"></div>
+</div>
+<div class="section">
+    <h2>CSS layout & visuals</h2>
+    <div id="css-tests"></div>
+    <div class="vt-row">
+        <div><div style="font-size:10px;color:#6a809a;margin-bottom:4px">flex</div><div id="vt-flex"><div></div><div></div><div></div></div></div>
+        <div><div style="font-size:10px;color:#6a809a;margin-bottom:4px">grid</div><div id="vt-grid"><div></div><div></div><div></div><div></div><div></div><div></div></div></div>
+        <div><div style="font-size:10px;color:#6a809a;margin-bottom:4px">transform</div><div id="vt-transform"></div></div>
+        <div><div style="font-size:10px;color:#6a809a;margin-bottom:4px">gradient</div><div id="vt-gradient"></div></div>
+    </div>
+</div>
+<div class="section">
+    <h2>Storage & APIs</h2>
+    <div id="api-tests"></div>
+</div>
+<div class="section">
+    <h2>Network</h2>
+    <div id="net-tests"></div>
+</div>
+<div class="section">
+    <h2>Media</h2>
+    <div id="media-tests"></div>
+    <div class="vt-row">
+        <canvas id="vt-canvas" width="120" height="40"></canvas>
+        <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#3ca0a0"/><path d="M10 20 L18 28 L30 12" stroke="#fff" stroke-width="3" fill="none"/></svg>
+    </div>
+</div>
+
+<script>
+const TESTS = {
+    js: [
+        ['Promise', () => typeof Promise === 'function' && typeof Promise.resolve === 'function'],
+        ['async/await', () => { (async () => 1)(); return true; }],
+        ['Arrow functions', () => (() => 1)() === 1],
+        ['Template literals', () => `${1+1}` === '2'],
+        ['Destructuring', () => { const {a} = {a:1}; const [b] = [2]; return a===1 && b===2; }],
+        ['Spread/Rest', () => { const [...r] = [1,2]; return r.length === 2; }],
+        ['Map/Set', () => new Map().set(1,2).get(1) === 2 && new Set([1]).has(1)],
+        ['Symbol', () => typeof Symbol() === 'symbol'],
+        ['BigInt', () => typeof 1n === 'bigint'],
+        ['Optional chaining', () => { const o={}; return o?.x?.y === undefined; }],
+        ['Nullish coalescing', () => (null ?? 1) === 1],
+        ['globalThis', () => typeof globalThis === 'object'],
+        ['structuredClone', () => typeof structuredClone === 'function' && structuredClone({a:1}).a === 1],
+        ['Intl.DateTimeFormat', () => typeof Intl?.DateTimeFormat === 'function'],
+    ],
+    dom: [
+        ['document.querySelector', () => !!document.querySelector('body')],
+        ['querySelectorAll', () => document.querySelectorAll('div').length > 0],
+        ['createElement', () => document.createElement('div').tagName === 'DIV'],
+        ['innerHTML', () => { const d=document.createElement('div'); d.innerHTML='<span>x</span>'; return d.firstChild.tagName === 'SPAN'; }],
+        ['textContent', () => { const d=document.createElement('div'); d.textContent='hi'; return d.textContent === 'hi'; }],
+        ['classList', () => { const d=document.createElement('div'); d.classList.add('a'); return d.classList.contains('a'); }],
+        ['dataset', () => { const d=document.createElement('div'); d.dataset.x='1'; return d.dataset.x === '1'; }],
+        ['addEventListener', () => { let hit=false; const d=document.createElement('div'); d.addEventListener('click',()=>hit=true); d.click(); return hit; }],
+        ['CustomEvent', () => { const e = new CustomEvent('x',{detail:1}); return e.detail === 1; }],
+        ['MutationObserver', () => typeof MutationObserver === 'function'],
+        ['ResizeObserver', () => typeof ResizeObserver === 'function'],
+        ['IntersectionObserver', () => typeof IntersectionObserver === 'function'],
+        ['requestAnimationFrame', () => typeof requestAnimationFrame === 'function'],
+        ['Shadow DOM', () => typeof document.createElement('div').attachShadow === 'function'],
+    ],
+    css: [
+        ['Flexbox renders', () => { const r = document.getElementById('vt-flex').getBoundingClientRect(); return r.width >= 99 && r.width <= 101; }],
+        ['Grid renders', () => { const r = document.getElementById('vt-grid').getBoundingClientRect(); return r.width >= 99 && r.width <= 101; }],
+        ['Transform applied', () => getComputedStyle(document.getElementById('vt-transform')).transform !== 'none'],
+        ['Gradient computed', () => getComputedStyle(document.getElementById('vt-gradient')).backgroundImage.includes('gradient')],
+        ['CSS variables', () => { document.documentElement.style.setProperty('--x','1px'); return getComputedStyle(document.documentElement).getPropertyValue('--x').trim() === '1px'; }],
+        ['calc()', () => { const d=document.createElement('div'); d.style.width='calc(10px + 5px)'; document.body.appendChild(d); const w = d.getBoundingClientRect().width; d.remove(); return w >= 14 && w <= 16; }],
+        [':has() selector', () => { try { document.querySelector('html:has(body)'); return true; } catch { return false; } }],
+        ['position:sticky', () => CSS.supports?.('position', 'sticky') === true],
+        ['aspect-ratio', () => CSS.supports?.('aspect-ratio', '1') === true],
+        ['gap (flex)', () => CSS.supports?.('gap', '4px') === true],
+        ['filter', () => CSS.supports?.('filter', 'blur(2px)') === true],
+        ['backdrop-filter', () => CSS.supports?.('backdrop-filter', 'blur(2px)') === true],
+    ],
+    api: [
+        ['localStorage', () => { try { localStorage.setItem('_t','1'); const ok = localStorage.getItem('_t') === '1'; localStorage.removeItem('_t'); return ok; } catch { return false; } }],
+        ['sessionStorage', () => { try { sessionStorage.setItem('_t','1'); return sessionStorage.getItem('_t') === '1'; } catch { return false; } }],
+        ['IndexedDB', () => typeof indexedDB === 'object' && indexedDB !== null],
+        ['Cookies', () => typeof document.cookie === 'string'],
+        ['Web Crypto', () => typeof crypto?.subtle?.digest === 'function'],
+        ['crypto.randomUUID', () => typeof crypto?.randomUUID === 'function'],
+        ['Geolocation', () => typeof navigator.geolocation === 'object'],
+        ['Clipboard API', () => typeof navigator.clipboard?.writeText === 'function'],
+        ['Notification', () => typeof Notification === 'function'],
+        ['matchMedia', () => typeof matchMedia === 'function'],
+        ['performance.now', () => typeof performance?.now === 'function'],
+        ['URL', () => new URL('http://x/').hostname === 'x'],
+        ['URLSearchParams', () => new URLSearchParams('a=1').get('a') === '1'],
+        ['Worker', () => typeof Worker === 'function'],
+        ['ServiceWorker', () => 'serviceWorker' in navigator],
+    ],
+    net: [
+        ['fetch (data: URL)', async () => { const r = await fetch('data:text/plain,hi'); return await r.text() === 'hi'; }],
+        ['fetch (https GET)', async () => { try { const r = await fetch('https://www.google.com/generate_204', {mode:'no-cors'}); return r.status === 204 || r.status === 0; } catch { return false; } }],
+        ['XMLHttpRequest', () => typeof XMLHttpRequest === 'function'],
+        ['WebSocket', () => typeof WebSocket === 'function'],
+        ['fetch streaming (Response.body)', () => 'body' in new Response()],
+        ['AbortController', () => typeof AbortController === 'function'],
+    ],
+    media: [
+        ['Image() loads data: URL', async () => { return new Promise(res => { const i = new Image(); i.onload = () => res(true); i.onerror = () => res(false); i.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"/>'; setTimeout(() => res(false), 1500); }); }],
+        ['Canvas 2D context', () => { const c = document.getElementById('vt-canvas'); const ctx = c.getContext('2d'); if(!ctx) return false; ctx.fillStyle='#3ca0a0'; ctx.fillRect(0,0,120,40); ctx.fillStyle='#7fffd4'; ctx.font='14px sans-serif'; ctx.fillText('canvas ok', 8, 26); return true; }],
+        ['WebGL', () => { try { return !!document.createElement('canvas').getContext('webgl'); } catch { return false; } }],
+        ['WebGL2', () => { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } }],
+        ['SVG inline render', () => document.querySelector('svg circle') !== null],
+        ['<video> element', () => typeof document.createElement('video').play === 'function'],
+        ['<audio> element', () => typeof document.createElement('audio').play === 'function'],
+        ['Audio API', () => typeof AudioContext === 'function' || typeof webkitAudioContext === 'function'],
+    ],
+};
+
+const SECTION_IDS = {js:'js-tests', dom:'dom-tests', css:'css-tests', api:'api-tests', net:'net-tests', media:'media-tests'};
+let pass=0, fail=0, skip=0;
+
+function row(name, status, detail) {
+    const r = document.createElement('div');
+    r.className = 'row';
+    const left = document.createElement('div');
+    left.className = 'name';
+    left.innerHTML = '<code>' + name + '</code>' + (detail ? '<div class="detail">' + detail + '</div>' : '');
+    const s = document.createElement('div');
+    s.className = 'status ' + status;
+    s.textContent = status.toUpperCase();
+    r.appendChild(left);
+    r.appendChild(s);
+    return r;
+}
+
+function updateSummary() {
+    document.getElementById('sumPass').textContent = pass + ' pass';
+    document.getElementById('sumFail').textContent = fail + ' fail';
+    document.getElementById('sumSkip').textContent = skip + ' skip';
+}
+
+async function runSection(key) {
+    const container = document.getElementById(SECTION_IDS[key]);
+    for (const [name, fn] of TESTS[key]) {
+        const placeholder = row(name, 'run');
+        container.appendChild(placeholder);
+        let result = false, detail = '';
+        try {
+            const r = fn();
+            result = (r && typeof r.then === 'function') ? await r : !!r;
+        } catch (e) {
+            detail = (e && e.message) ? e.message : String(e);
+        }
+        if (result) pass++; else fail++;
+        const real = row(name, result ? 'pass' : 'fail', detail);
+        container.replaceChild(real, placeholder);
+        updateSummary();
+    }
+}
+
+(async function() {
+    document.getElementById('uaLabel').textContent = navigator.userAgent;
+    const ua = navigator.userAgent.toLowerCase();
+    let engine = 'unknown';
+    if (ua.includes('servo')) engine = 'Servo';
+    else if (ua.includes('edg/') || ua.includes('chrome/')) engine = 'WebView2 (Chromium)';
+    else if (ua.includes('webkit')) engine = 'WebKit';
+    document.getElementById('engineLabel').textContent = engine;
+
+    for (const k of Object.keys(SECTION_IDS)) {
+        await runSection(k);
+    }
+})();
+</script>
+</body></html>
