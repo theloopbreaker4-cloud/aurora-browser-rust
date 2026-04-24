@@ -455,6 +455,10 @@ pub fn run() {
                             let new_config = crate::config::update_config_value(&config_str, parts[0], parts[1]);
                             let _ = std::fs::write(&config_path, &new_config);
                             let _ = std::fs::write("config.json", &new_config);
+                            if parts[0] == "theme" {
+                                let _ = proxy_for_events
+                                    .send_event(UserEvent::ApplyTheme(parts[1].to_string()));
+                            }
                         }
                     }
                     return;
@@ -666,6 +670,13 @@ pub fn run() {
                         *control_flow = ControlFlow::Exit;
                     }
 
+                    UserEvent::ApplyTheme(theme) => {
+                        let esc = theme.replace('\\', "\\\\").replace('\'', "\\'");
+                        let _ = toolbar_webview.evaluate_script(&format!(
+                            "if(window.applyTheme)applyTheme('{}')",
+                            esc
+                        ));
+                    }
                     UserEvent::AddBookmark(title, url) => {
                         if !url.is_empty() && !url.starts_with("aurora://") {
                             crate::config::add_bookmark(title, url);
