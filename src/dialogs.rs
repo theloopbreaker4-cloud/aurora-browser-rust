@@ -10,6 +10,17 @@
 
 use std::path::PathBuf;
 
+/// One row of a popup menu shown by `popup_menu()`.
+/// `Item { id }` is what's returned when the user picks it.
+/// `Separator` draws a horizontal divider. `Group { label, items }` becomes a
+/// disabled header followed by indented items (used for `<optgroup>`).
+#[derive(Clone, Debug)]
+pub enum PopupItem {
+    Item { id: u32, label: String, checked: bool, disabled: bool },
+    Separator,
+    Group { label: String, items: Vec<PopupItem> },
+}
+
 /// A pattern accepted by `<input type="file" accept="...">`.
 /// `description` is shown in the filter dropdown; `extensions` are bare ext strings (no leading dot).
 #[derive(Clone, Debug)]
@@ -85,6 +96,210 @@ pub fn open_file_dialog(
 fn push_utf16_z(out: &mut Vec<u16>, s: &str) {
     out.extend(s.encode_utf16());
     out.push(0);
+}
+
+/// Show a native Win32 popup menu at the given screen coordinates.
+/// `screen_x` / `screen_y` are absolute screen pixels (use ClientToScreen first
+/// if you have window-relative coords). Returns `Some(id)` of the chosen Item,
+/// or `None` if dismissed. `parent_hwnd` owns the menu so input routing works.
+unsafe fn append_popup_item(
+    menu: windows_sys::Win32::UI::WindowsAndMessaging::HMENU,
+    item: &PopupItem,
+) {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        AppendMenuW, CreatePopupMenu, MF_CHECKED, MF_DISABLED, MF_GRAYED, MF_POPUP, MF_SEPARATOR,
+        MF_STRING,
+    };
+    match item {
+        PopupItem::Separator => {
+            AppendMenuW(menu, MF_SEPARATOR, 0, std::ptr::null());
+        }
+        PopupItem::Item {
+            id,
+            label,
+            checked,
+            disabled,
+        } => {
+            let mut flags = MF_STRING;
+            if *checked {
+                flags |= MF_CHECKED;
+            }
+            if *disabled {
+                flags |= MF_DISABLED | MF_GRAYED;
+            }
+            let w = utf16_z(label);
+            AppendMenuW(menu, flags, (*id as usize) + 1, w.as_ptr());
+        }
+        PopupItem::Group { label, items } => {
+            let sub = CreatePopupMenu();
+            if sub.is_null() {
+                return;
+            }
+            for it in items {
+                append_popup_item(sub, it);
+            }
+            let w = utf16_z(label);
+            AppendMenuW(menu, MF_POPUP, sub as usize, w.as_ptr());
+        }
+    }
+}
+
+fn utf16_z(s: &str) -> Vec<u16> {
+    s.encode_utf16().chain(std::iter::once(0)).collect()
+}
+
+pub fn popup_menu(
+    parent_hwnd: isize,
+    screen_x: i32,
+    screen_y: i32,
+    items: &[PopupItem],
+) -> Option<u32> {
+    use windows_sys::Win32::Foundation::HWND;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        CreatePopupMenu, DestroyMenu, SetForegroundWindow, TrackPopupMenu, TPM_LEFTALIGN,
+        TPM_RETURNCMD, TPM_TOPALIGN,
+    };
+
+    unsafe {
+        let menu = CreatePopupMenu();
+        if menu.is_null() {
+            return None;
+        }
+        for it in items {
+            append_popup_item(menu, it);
+        }
+        // Per MSDN: must SetForegroundWindow before TrackPopupMenu so the menu
+        // dismisses correctly when the user clicks elsewhere.
+        SetForegroundWindow(parent_hwnd as HWND);
+        let cmd = TrackPopupMenu(
+            menu,
+            TPM_RETURNCMD | TPM_LEFTALIGN | TPM_TOPALIGN,
+            screen_x,
+            screen_y,
+            0,
+            parent_hwnd as HWND,
+            std::ptr::null(),
+        );
+        DestroyMenu(menu);
+        if cmd == 0 {
+            None
+        } else {
+            // We added 1 to all IDs in append_popup_item; reverse here.
+            Some(cmd as u32 - 1)
+        }
+    }
+}
+
+/// Show the native Win32 color picker. Returns the chosen color as (r, g, b)
+/// 0-255, or `None` if cancelled. `initial` pre-selects a color.
+pub fn pick_color(parent_hwnd: isize, initial: Option<(u8, u8, u8)>) -> Option<(u8, u8, u8)> {
+    use windows_sys::Win32::Foundation::HWND;
+    use windows_sys::Win32::UI::Controls::Dialogs::{
+        ChooseColorW, CC_FULLOPEN, CC_RGBINIT, CHOOSECOLORW,
+    };
+
+    // Custom palette buffer — required by ChooseColorW even if unused.
+    let mut custom: [u32; 16] = [0; 16];
+    let initial_rgb = initial
+        .map(|(r, g, b)| u32::from(r) | (u32::from(g) << 8) | (u32::from(b) << 16))
+        .unwrap_or(0);
+
+    let mut cc: CHOOSECOLORW = unsafe { std::mem::zeroed() };
+    cc.lStructSize = std::mem::size_of::<CHOOSECOLORW>() as u32;
+    cc.hwndOwner = parent_hwnd as HWND;
+    cc.rgbResult = initial_rgb;
+    cc.lpCustColors = custom.as_mut_ptr();
+    cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+    let ok = unsafe { ChooseColorW(&mut cc) };
+    if ok == 0 {
+        return None;
+    }
+
+    let r = (cc.rgbResult & 0xFF) as u8;
+    let g = ((cc.rgbResult >> 8) & 0xFF) as u8;
+    let b = ((cc.rgbResult >> 16) & 0xFF) as u8;
+    Some((r, g, b))
+}
+
+/// Type of script-initiated simple dialog.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum SimpleDialogKind {
+    Alert,
+    Confirm,
+    Prompt,
+}
+
+/// Outcome of a simple dialog.
+#[derive(Debug)]
+pub enum SimpleDialogResult {
+    /// Alert dismissed (only outcome).
+    Acknowledged,
+    /// Confirm: true=OK, false=Cancel.
+    Confirmed(bool),
+    /// Prompt: Some(text) on OK, None on Cancel.
+    Prompted(Option<String>),
+}
+
+/// Show a script-initiated dialog (alert/confirm/prompt).
+/// Title is fixed to "Aurora" so the user cannot mistake it for browser chrome.
+/// For `Prompt`, the implementation falls back to a fake "OK with empty text"
+/// because Win32 has no native prompt() — we'll wire a proper input dialog later.
+pub fn simple_dialog(
+    parent_hwnd: isize,
+    kind: SimpleDialogKind,
+    message: &str,
+    _default: Option<&str>,
+) -> SimpleDialogResult {
+    use windows_sys::Win32::Foundation::HWND;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        MessageBoxW, IDOK, MB_ICONINFORMATION, MB_ICONQUESTION, MB_OK, MB_OKCANCEL,
+    };
+
+    let title: Vec<u16> = "Aurora".encode_utf16().chain(std::iter::once(0)).collect();
+    let body: Vec<u16> = message.encode_utf16().chain(std::iter::once(0)).collect();
+
+    match kind {
+        SimpleDialogKind::Alert => {
+            unsafe {
+                MessageBoxW(
+                    parent_hwnd as HWND,
+                    body.as_ptr(),
+                    title.as_ptr(),
+                    MB_OK | MB_ICONINFORMATION,
+                );
+            }
+            SimpleDialogResult::Acknowledged
+        }
+        SimpleDialogKind::Confirm => {
+            let r = unsafe {
+                MessageBoxW(
+                    parent_hwnd as HWND,
+                    body.as_ptr(),
+                    title.as_ptr(),
+                    MB_OKCANCEL | MB_ICONQUESTION,
+                )
+            };
+            SimpleDialogResult::Confirmed(r == IDOK as i32)
+        }
+        SimpleDialogKind::Prompt => {
+            // TODO: real prompt UI. For now show OKCANCEL as a confirmation
+            // that the message was seen, returning empty string on OK.
+            let r = unsafe {
+                MessageBoxW(
+                    parent_hwnd as HWND,
+                    body.as_ptr(),
+                    title.as_ptr(),
+                    MB_OKCANCEL | MB_ICONQUESTION,
+                )
+            };
+            if r == IDOK as i32 {
+                SimpleDialogResult::Prompted(Some(String::new()))
+            } else {
+                SimpleDialogResult::Prompted(None)
+            }
+        }
+    }
 }
 
 /// Decode the GetOpenFileNameW result buffer.
