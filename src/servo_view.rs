@@ -25,12 +25,13 @@ use raw_window_handle::{
     Win32WindowHandle, WindowHandle, WindowsDisplayHandle,
 };
 use servo::{
-    Cursor as ServoCursor, DeviceIndependentPixel, DevicePoint, EmbedderControl, EventLoopWaker,
-    InputEvent, KeyboardEvent as ServoKeyboardEvent, LoadStatus,
-    MouseButton as ServoMouseButton, MouseButtonAction, MouseButtonEvent, MouseMoveEvent,
-    NavigationRequest, RenderingContext, SelectElementOptionOrOptgroup, ServoBuilder, ServoUrl,
-    SimpleDialog as ServoSimpleDialog, WebView, WebViewBuilder, WebViewDelegate, WebViewPoint,
-    WheelDelta, WheelEvent, WheelMode, WindowRenderingContext,
+    ContextMenuAction, ContextMenuItem as ServoContextMenuItem, Cursor as ServoCursor,
+    DeviceIndependentPixel, DevicePoint, EmbedderControl, EventLoopWaker, InputEvent,
+    KeyboardEvent as ServoKeyboardEvent, LoadStatus, MouseButton as ServoMouseButton,
+    MouseButtonAction, MouseButtonEvent, MouseMoveEvent, NavigationRequest, RenderingContext,
+    SelectElementOptionOrOptgroup, ServoBuilder, ServoUrl, SimpleDialog as ServoSimpleDialog,
+    WebView, WebViewBuilder, WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode,
+    WindowRenderingContext,
 };
 use euclid::Scale;
 use tao::event_loop::EventLoopProxy;
@@ -335,8 +336,51 @@ impl WebViewDelegate for AuroraDelegate {
                     let _ = dialog;
                 }
             }
-            // ContextMenu and InputMethod are still pending. They are wired in
-            // subsequent commits.
+            EmbedderControl::ContextMenu(menu) => {
+                #[cfg(windows)]
+                {
+                    // Map Servo's context-menu items to our generic PopupItem,
+                    // remembering each Item's id -> action for the response.
+                    let mut actions: Vec<ContextMenuAction> = Vec::new();
+                    let items: Vec<crate::dialogs::PopupItem> = menu
+                        .items()
+                        .iter()
+                        .map(|it| match it {
+                            ServoContextMenuItem::Item {
+                                label,
+                                action,
+                                enabled,
+                            } => {
+                                let id = actions.len() as u32;
+                                actions.push(*action);
+                                crate::dialogs::PopupItem::Item {
+                                    id,
+                                    label: label.clone(),
+                                    checked: false,
+                                    disabled: !*enabled,
+                                }
+                            }
+                            ServoContextMenuItem::Separator => crate::dialogs::PopupItem::Separator,
+                        })
+                        .collect();
+
+                    let pos = menu.position();
+                    let (sx, sy) = self.client_to_screen(pos.min.x, pos.max.y);
+
+                    match crate::dialogs::popup_menu(self.state.parent_hwnd, sx, sy, &items) {
+                        Some(id) if (id as usize) < actions.len() => {
+                            menu.select(actions[id as usize]);
+                        }
+                        _ => menu.dismiss(),
+                    }
+                }
+                #[cfg(not(windows))]
+                {
+                    menu.dismiss();
+                }
+            }
+            // InputMethod (IME for CJK input) still pending — large platform-specific
+            // wire-up. Tracked in project_servo_roadmap.md.
             _ => {}
         }
     }
