@@ -16,6 +16,7 @@ mod portal;
 #[cfg(feature = "servo-engine")]
 mod servo_view;
 mod settings;
+mod test_page;
 mod toolbar;
 mod webviews;
 
