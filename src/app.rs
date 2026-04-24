@@ -680,6 +680,12 @@ pub fn run() {
                                 window.set_cursor_visible(false);
                             }
                         }
+                        // When Servo hosts the content in a Win32 child HWND, the child's
+                        // window class returns its own cursor on every WM_SETCURSOR — override it.
+                        #[cfg(all(windows, feature = "servo-engine"))]
+                        if let Some(ref sv) = servo_view {
+                            crate::servo_view::set_child_window_cursor(sv.child_hwnd(), *cursor);
+                        }
                     }
                     UserEvent::ApplyTheme(theme) => {
                         let esc = theme.replace('\\', "\\\\").replace('\'', "\\'");
