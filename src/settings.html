@@ -16,6 +16,32 @@ h1{font-size:30px;font-weight:600;color:#7fffd4;margin-bottom:8px;letter-spacing
 .control{display:flex;align-items:center;gap:10px}
 select,input[type=text]{background:#0a1020;color:#cfe0f0;border:1px solid rgba(60,80,120,0.35);border-radius:8px;padding:8px 12px;font-size:13px;outline:none;min-width:220px}
 select:focus,input:focus{border-color:rgba(0,255,170,0.35);box-shadow:0 0 0 2px rgba(0,255,170,0.08)}
+
+/* Custom dropdown — used to replace native <select>, which Servo does not render correctly. */
+.cs-wrap{position:relative;display:inline-block;min-width:220px}
+.cs-trigger{
+    background:#0a1020;color:#cfe0f0;border:1px solid rgba(60,80,120,0.35);
+    border-radius:8px;padding:8px 32px 8px 12px;font-size:13px;cursor:pointer;
+    width:100%;text-align:left;position:relative;user-select:none;
+}
+.cs-trigger:hover{border-color:rgba(0,255,170,0.25)}
+.cs-trigger.open{border-color:rgba(0,255,170,0.35);box-shadow:0 0 0 2px rgba(0,255,170,0.08)}
+.cs-trigger::after{
+    content:'';position:absolute;right:12px;top:50%;width:8px;height:8px;
+    border-right:1.5px solid #6f829c;border-bottom:1.5px solid #6f829c;
+    transform:translateY(-70%) rotate(45deg);transition:transform 0.15s;
+}
+.cs-trigger.open::after{transform:translateY(-30%) rotate(-135deg)}
+.cs-list{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;
+    background:#0a1020;border:1px solid rgba(0,255,170,0.25);border-radius:8px;
+    max-height:240px;overflow-y:auto;z-index:50;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);display:none;
+}
+.cs-trigger.open + .cs-list{display:block}
+.cs-opt{padding:8px 12px;font-size:13px;color:#cfe0f0;cursor:pointer}
+.cs-opt:hover{background:rgba(60,160,160,0.12)}
+.cs-opt.sel{background:rgba(0,255,170,0.08);color:#7fffd4}
 button{background:#12263d;color:#cfe8f4;border:1px solid rgba(0,255,170,0.25);border-radius:8px;padding:8px 14px;font-size:12px;letter-spacing:0.3px;cursor:pointer}
 button:hover{border-color:rgba(0,255,170,0.45);box-shadow:0 6px 18px rgba(0,0,0,0.2)}
 button:disabled{opacity:0.45;cursor:default;box-shadow:none}
@@ -183,6 +209,14 @@ button:disabled{opacity:0.45;cursor:default;box-shadow:none}
     <div class="row">
         <div><div class="row-label" data-i18n="label_engine_in_use">Engine</div><div class="row-desc" id="currentEngine">WebView2 (Chromium)</div></div>
     </div>
+    <script>
+    // Reflect the actually-active engine here, not a hardcoded label.
+    try {
+        const eng = (typeof AURORA_CONFIG !== 'undefined' && AURORA_CONFIG.engine) || 'webview2';
+        const txt = eng === 'servo' ? 'Servo (Rust, experimental)' : 'WebView2 (Chromium)';
+        document.getElementById('currentEngine').textContent = txt;
+    } catch(e){}
+    </script>
 </div>
 
 <div class="version">Aurora Browser v0.3.0 - Built with Rust + wry</div>
@@ -254,5 +288,72 @@ try {
     const ee = document.getElementById('engine-'+engine);
     if (ee) ee.classList.add('active');
 } catch(e){}
+
+// ===== CUSTOM SELECT POLYFILL =====
+// Servo doesn't render native <select> dropdowns reliably. We hide the real
+// <select> (still used to hold the value + dispatch change) and overlay a
+// custom trigger + list built from <option>s.
+(function customSelects(){
+    const selects = document.querySelectorAll('select');
+    let openWrap = null;
+    document.addEventListener('click', () => { if(openWrap){ openWrap.querySelector('.cs-trigger').classList.remove('open'); openWrap = null; } });
+
+    selects.forEach(sel => {
+        // Hide the native control but keep it in the DOM so it remains the source of truth.
+        sel.style.position = 'absolute';
+        sel.style.opacity = '0';
+        sel.style.pointerEvents = 'none';
+        sel.style.width = '1px';
+        sel.style.height = '1px';
+
+        const wrap = document.createElement('span');
+        wrap.className = 'cs-wrap';
+        const trigger = document.createElement('div');
+        trigger.className = 'cs-trigger';
+        const list = document.createElement('div');
+        list.className = 'cs-list';
+        wrap.appendChild(trigger);
+        wrap.appendChild(list);
+        sel.parentNode.insertBefore(wrap, sel);
+
+        function paintTrigger(){
+            const opt = sel.options[sel.selectedIndex];
+            trigger.textContent = opt ? opt.textContent : '';
+        }
+        function rebuildOptions(){
+            list.innerHTML = '';
+            for (let i = 0; i < sel.options.length; i++) {
+                const o = sel.options[i];
+                const item = document.createElement('div');
+                item.className = 'cs-opt' + (i === sel.selectedIndex ? ' sel' : '');
+                item.textContent = o.textContent;
+                item.dataset.value = o.value;
+                item.addEventListener('click', e => {
+                    e.stopPropagation();
+                    sel.value = o.value;
+                    sel.dispatchEvent(new Event('change', {bubbles:true}));
+                    paintTrigger();
+                    rebuildOptions();
+                    trigger.classList.remove('open');
+                    openWrap = null;
+                });
+                list.appendChild(item);
+            }
+        }
+        trigger.addEventListener('click', e => {
+            e.stopPropagation();
+            const wasOpen = trigger.classList.contains('open');
+            if (openWrap) openWrap.querySelector('.cs-trigger').classList.remove('open');
+            if (!wasOpen) { trigger.classList.add('open'); openWrap = wrap; rebuildOptions(); }
+            else { openWrap = null; }
+        });
+        // Re-render trigger if other code changes sel.value programmatically.
+        const observer = new MutationObserver(paintTrigger);
+        try { observer.observe(sel, {childList:true, subtree:true, attributes:true, attributeFilter:['value']}); } catch(e){}
+
+        paintTrigger();
+        rebuildOptions();
+    });
+})();
 </script>
 </body></html>
