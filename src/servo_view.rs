@@ -28,8 +28,9 @@ use servo::{
     Cursor as ServoCursor, DeviceIndependentPixel, DevicePoint, EmbedderControl, EventLoopWaker,
     InputEvent, KeyboardEvent as ServoKeyboardEvent, LoadStatus,
     MouseButton as ServoMouseButton, MouseButtonAction, MouseButtonEvent, MouseMoveEvent,
-    NavigationRequest, RenderingContext, ServoBuilder, ServoUrl, WebView, WebViewBuilder,
-    WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode, WindowRenderingContext,
+    NavigationRequest, RenderingContext, SelectElementOptionOrOptgroup, ServoBuilder, ServoUrl,
+    SimpleDialog as ServoSimpleDialog, WebView, WebViewBuilder, WebViewDelegate, WebViewPoint,
+    WheelDelta, WheelEvent, WheelMode, WindowRenderingContext,
 };
 use euclid::Scale;
 use tao::event_loop::EventLoopProxy;
@@ -135,6 +136,48 @@ struct ServoState {
 
 struct AuroraDelegate {
     state: Rc<ServoState>,
+    /// Servo child HWND (cached for client_to_screen conversion).
+    child_hwnd: isize,
+    /// Toolbar physical-pixel offset so we map content coords to window coords.
+    toolbar_phys: u32,
+}
+
+impl AuroraDelegate {
+    /// Convert Servo content-area coords (relative to the Servo render surface)
+    /// to absolute screen coords for popup positioning.
+    #[cfg(windows)]
+    fn client_to_screen(&self, x: i32, y: i32) -> (i32, i32) {
+        use windows_sys::Win32::Foundation::{HWND, POINT};
+        use windows_sys::Win32::Graphics::Gdi::ClientToScreen;
+        let mut pt = POINT { x, y };
+        unsafe {
+            ClientToScreen(self.child_hwnd as HWND, &mut pt);
+        }
+        (pt.x, pt.y)
+    }
+    #[cfg(not(windows))]
+    fn client_to_screen(&self, x: i32, y: i32) -> (i32, i32) {
+        (x, y)
+    }
+
+    #[cfg(windows)]
+    fn handle_simple_dialog(&self, dialog: ServoSimpleDialog) {
+        use crate::dialogs::{simple_dialog, SimpleDialogKind, SimpleDialogResult};
+        let kind = match &dialog {
+            ServoSimpleDialog::Alert(_) => SimpleDialogKind::Alert,
+            ServoSimpleDialog::Confirm(_) => SimpleDialogKind::Confirm,
+            ServoSimpleDialog::Prompt(_) => SimpleDialogKind::Prompt,
+        };
+        let message = dialog.message().to_string();
+        let result = simple_dialog(self.state.parent_hwnd, kind, &message, None);
+        match (kind, result) {
+            (SimpleDialogKind::Alert, _) => dialog.confirm(),
+            (SimpleDialogKind::Confirm, SimpleDialogResult::Confirmed(true)) => dialog.confirm(),
+            (SimpleDialogKind::Confirm, _) => dialog.dismiss(),
+            (SimpleDialogKind::Prompt, SimpleDialogResult::Prompted(Some(_))) => dialog.confirm(),
+            (SimpleDialogKind::Prompt, _) => dialog.dismiss(),
+        }
+    }
 }
 
 impl WebViewDelegate for AuroraDelegate {
@@ -184,7 +227,7 @@ impl WebViewDelegate for AuroraDelegate {
     fn show_embedder_control(&self, _webview: WebView, control: EmbedderControl) {
         match control {
             EmbedderControl::FilePicker(mut picker) => {
-                #[cfg(all(windows, feature = "servo-engine"))]
+                #[cfg(windows)]
                 {
                     // Servo's FilterPattern is a single bare extension ("png", "jpg", etc).
                     // Group them all into one filter row so the user sees "Allowed types".
@@ -210,12 +253,90 @@ impl WebViewDelegate for AuroraDelegate {
                 }
                 #[cfg(not(windows))]
                 {
-                    picker.dismiss();
+                    let _ = picker;
                 }
             }
-            // The other EmbedderControl variants (SelectElement, ColorPicker, InputMethod,
-            // SimpleDialog, ContextMenu) are still unhandled — they'll be wired in subsequent
-            // commits. For now they get dropped, which Servo treats as dismissal.
+            EmbedderControl::SelectElement(mut select) => {
+                #[cfg(windows)]
+                {
+                    // Build a Win32 popup menu mirroring the <select>'s <option>/<optgroup>s.
+                    let selected: std::collections::HashSet<usize> =
+                        select.selected_options().into_iter().collect();
+                    let items: Vec<crate::dialogs::PopupItem> = select
+                        .options()
+                        .iter()
+                        .map(|opt_or_grp| match opt_or_grp {
+                            SelectElementOptionOrOptgroup::Option(o) => {
+                                crate::dialogs::PopupItem::Item {
+                                    id: o.id as u32,
+                                    label: o.label.clone(),
+                                    checked: selected.contains(&o.id),
+                                    disabled: o.is_disabled,
+                                }
+                            }
+                            SelectElementOptionOrOptgroup::Optgroup { label, options } => {
+                                crate::dialogs::PopupItem::Group {
+                                    label: label.clone(),
+                                    items: options
+                                        .iter()
+                                        .map(|o| crate::dialogs::PopupItem::Item {
+                                            id: o.id as u32,
+                                            label: o.label.clone(),
+                                            checked: selected.contains(&o.id),
+                                            disabled: o.is_disabled,
+                                        })
+                                        .collect(),
+                                }
+                            }
+                        })
+                        .collect();
+
+                    // Anchor at the bottom-left corner of the <select>, in screen coords.
+                    // Servo gives device pixels relative to the webview.
+                    let pos = select.position();
+                    let (sx, sy) = self.client_to_screen(pos.min.x, pos.max.y);
+
+                    match crate::dialogs::popup_menu(self.state.parent_hwnd, sx, sy, &items) {
+                        Some(id) => {
+                            select.select(vec![id as usize]);
+                            select.submit();
+                        }
+                        None => select.submit(), // dismissed -> keep prior selection
+                    }
+                }
+                #[cfg(not(windows))]
+                {
+                    let _ = select;
+                }
+            }
+            EmbedderControl::ColorPicker(mut picker) => {
+                #[cfg(windows)]
+                {
+                    let initial = picker
+                        .current_color()
+                        .map(|c| (c.red, c.green, c.blue));
+                    let chosen = crate::dialogs::pick_color(self.state.parent_hwnd, initial)
+                        .map(|(r, g, b)| servo::RgbColor { red: r, green: g, blue: b });
+                    picker.select(chosen);
+                    picker.submit();
+                }
+                #[cfg(not(windows))]
+                {
+                    let _ = picker;
+                }
+            }
+            EmbedderControl::SimpleDialog(dialog) => {
+                #[cfg(windows)]
+                {
+                    self.handle_simple_dialog(dialog);
+                }
+                #[cfg(not(windows))]
+                {
+                    let _ = dialog;
+                }
+            }
+            // ContextMenu and InputMethod are still pending. They are wired in
+            // subsequent commits.
             _ => {}
         }
     }
@@ -489,6 +610,8 @@ impl ServoView {
 
         let delegate = Rc::new(AuroraDelegate {
             state: Rc::clone(&state),
+            child_hwnd,
+            toolbar_phys: toolbar_height_phys,
         });
 
         let hidpi = Scale::<f32, DeviceIndependentPixel, _>::new(scale_factor as f32);
