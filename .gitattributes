@@ -1,1 +1,20 @@
+* text=auto eol=lf
+*.rs text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.svg text eol=lf
+
+*.png binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.dll binary
+*.exe binary
+*.lib binary
+*.hyb binary
+
+# Mark embedded HTML files as Rust for GitHub linguist (they are include_str!'d source).
 *.html linguist-language=Rust
