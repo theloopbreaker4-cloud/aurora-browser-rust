@@ -6,6 +6,8 @@ mod about;
 mod app;
 mod bookmarks_page;
 mod config;
+#[cfg(all(windows, feature = "servo-engine"))]
+mod dialogs;
 mod downloads_page;
 mod error;
 mod events;

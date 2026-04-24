@@ -25,11 +25,11 @@ use raw_window_handle::{
     Win32WindowHandle, WindowHandle, WindowsDisplayHandle,
 };
 use servo::{
-    Cursor as ServoCursor, DeviceIndependentPixel, DevicePoint, EventLoopWaker, InputEvent,
-    KeyboardEvent as ServoKeyboardEvent, LoadStatus, MouseButton as ServoMouseButton,
-    MouseButtonAction, MouseButtonEvent, MouseMoveEvent, NavigationRequest, RenderingContext,
-    ServoBuilder, ServoUrl, WebView, WebViewBuilder, WebViewDelegate, WebViewPoint, WheelDelta,
-    WheelEvent, WheelMode, WindowRenderingContext,
+    Cursor as ServoCursor, DeviceIndependentPixel, DevicePoint, EmbedderControl, EventLoopWaker,
+    InputEvent, KeyboardEvent as ServoKeyboardEvent, LoadStatus,
+    MouseButton as ServoMouseButton, MouseButtonAction, MouseButtonEvent, MouseMoveEvent,
+    NavigationRequest, RenderingContext, ServoBuilder, ServoUrl, WebView, WebViewBuilder,
+    WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode, WindowRenderingContext,
 };
 use euclid::Scale;
 use tao::event_loop::EventLoopProxy;
@@ -129,6 +129,8 @@ impl HasDisplayHandle for RawHwnd {
 struct ServoState {
     needs_paint: Cell<bool>,
     proxy: EventLoopProxy<UserEvent>,
+    /// Parent (Aurora) HWND used as the owner for native modal dialogs (file picker etc.).
+    parent_hwnd: isize,
 }
 
 struct AuroraDelegate {
@@ -175,6 +177,45 @@ impl WebViewDelegate for AuroraDelegate {
                     crate::history::push_history_entry(&title, &url_s);
                 }
             }
+            _ => {}
+        }
+    }
+
+    fn show_embedder_control(&self, _webview: WebView, control: EmbedderControl) {
+        match control {
+            EmbedderControl::FilePicker(mut picker) => {
+                #[cfg(all(windows, feature = "servo-engine"))]
+                {
+                    // Servo's FilterPattern is a single bare extension ("png", "jpg", etc).
+                    // Group them all into one filter row so the user sees "Allowed types".
+                    let exts: Vec<String> =
+                        picker.filter_patterns().iter().map(|p| p.0.clone()).collect();
+                    let filters = if exts.is_empty() {
+                        vec![]
+                    } else {
+                        vec![crate::dialogs::FileFilter {
+                            description: format!("Allowed ({})", exts.join(", ")),
+                            extensions: exts,
+                        }]
+                    };
+                    let multi = picker.allow_select_multiple();
+                    match crate::dialogs::open_file_dialog(self.state.parent_hwnd, multi, &filters)
+                    {
+                        Some(paths) => {
+                            picker.select(&paths);
+                            picker.submit();
+                        }
+                        None => picker.dismiss(),
+                    }
+                }
+                #[cfg(not(windows))]
+                {
+                    picker.dismiss();
+                }
+            }
+            // The other EmbedderControl variants (SelectElement, ColorPicker, InputMethod,
+            // SimpleDialog, ContextMenu) are still unhandled — they'll be wired in subsequent
+            // commits. For now they get dropped, which Servo treats as dismissal.
             _ => {}
         }
     }
@@ -437,6 +478,7 @@ impl ServoView {
         let state = Rc::new(ServoState {
             needs_paint: Cell::new(false),
             proxy: proxy.clone(),
+            parent_hwnd,
         });
 
         let waker: Box<dyn EventLoopWaker> = Box::new(TaoWaker(Arc::new(Mutex::new(proxy))));

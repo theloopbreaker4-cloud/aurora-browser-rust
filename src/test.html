@@ -84,6 +84,10 @@ canvas{border:1px solid rgba(60,80,120,0.3);background:#000}
     <div id="net-tests"></div>
 </div>
 <div class="section">
+    <h2>Native OS integration (manual)</h2>
+    <div id="native-tests"></div>
+</div>
+<div class="section">
     <h2>Media</h2>
     <div id="media-tests"></div>
     <div class="vt-row">
@@ -165,6 +169,58 @@ const TESTS = {
         ['fetch streaming (Response.body)', () => 'body' in new Response()],
         ['AbortController', () => typeof AbortController === 'function'],
     ],
+    native: [
+        ['<input type="file"> opens dialog', () => {
+            // Render an actual <input type=file> so the user can click and verify
+            // the native picker pops. We can't auto-trigger it (browsers block
+            // .click() unless user-initiated), so this test is "manual-pass".
+            if (!document.getElementById('vt-file')) {
+                const sec = document.getElementById('native-tests');
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.innerHTML = '<div class="name"><code>Click to test file picker</code><div class="detail">Should open the native Open File dialog.</div></div>';
+                const inp = document.createElement('input');
+                inp.id = 'vt-file';
+                inp.type = 'file';
+                inp.style = 'background:#0a1020;color:#cfe0f0;border:1px solid rgba(60,80,120,0.35);border-radius:6px;padding:6px';
+                row.appendChild(inp);
+                sec.appendChild(row);
+            }
+            return typeof document.createElement('input').type !== 'undefined';
+        }],
+        ['<input type="file" multiple>', () => {
+            if (!document.getElementById('vt-file-multi')) {
+                const sec = document.getElementById('native-tests');
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.innerHTML = '<div class="name"><code>Click to test multi-file picker</code><div class="detail">Should allow Ctrl/Shift to pick multiple files.</div></div>';
+                const inp = document.createElement('input');
+                inp.id = 'vt-file-multi';
+                inp.type = 'file';
+                inp.multiple = true;
+                inp.style = 'background:#0a1020;color:#cfe0f0;border:1px solid rgba(60,80,120,0.35);border-radius:6px;padding:6px';
+                row.appendChild(inp);
+                sec.appendChild(row);
+            }
+            return true;
+        }],
+        ['<input type="file" accept="image/*">', () => {
+            if (!document.getElementById('vt-file-img')) {
+                const sec = document.getElementById('native-tests');
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.innerHTML = '<div class="name"><code>Click to test image-only picker</code><div class="detail">Filter should restrict to PNG/JPG/etc.</div></div>';
+                const inp = document.createElement('input');
+                inp.id = 'vt-file-img';
+                inp.type = 'file';
+                inp.accept = 'image/*';
+                inp.style = 'background:#0a1020;color:#cfe0f0;border:1px solid rgba(60,80,120,0.35);border-radius:6px;padding:6px';
+                row.appendChild(inp);
+                sec.appendChild(row);
+            }
+            return true;
+        }],
+    ],
     media: [
         ['Image() loads data: URL', async () => { return new Promise(res => { const i = new Image(); i.onload = () => res(true); i.onerror = () => res(false); i.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"/>'; setTimeout(() => res(false), 1500); }); }],
         ['Canvas 2D context', () => { const c = document.getElementById('vt-canvas'); const ctx = c.getContext('2d'); if(!ctx) return false; ctx.fillStyle='#3ca0a0'; ctx.fillRect(0,0,120,40); ctx.fillStyle='#7fffd4'; ctx.font='14px sans-serif'; ctx.fillText('canvas ok', 8, 26); return true; }],
@@ -177,7 +233,7 @@ const TESTS = {
     ],
 };
 
-const SECTION_IDS = {js:'js-tests', dom:'dom-tests', css:'css-tests', api:'api-tests', net:'net-tests', media:'media-tests'};
+const SECTION_IDS = {js:'js-tests', dom:'dom-tests', css:'css-tests', api:'api-tests', net:'net-tests', native:'native-tests', media:'media-tests'};
 let pass=0, fail=0, skip=0;
 
 function row(name, status, detail) {
