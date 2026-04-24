@@ -23,6 +23,8 @@ pub enum UserEvent {
     CloseWindow,
     DragWindow,
     SwitchEngine(String),
+    /// Apply theme name (aurora-dark / aurora-light / aurora-sleep) to the toolbar live.
+    ApplyTheme(String),
     /// Bookmark current page (title, url) into bookmarks.json.
     AddBookmark(String, String),
     /// Wipe history.json.

@@ -196,6 +196,11 @@ pub fn build_content_webview(
                     // Write to both exe dir and cwd as fallback
                     let _ = fs::write(&config_path, &new_config);
                     let _ = fs::write("config.json", &new_config);
+                    // Broadcast theme changes to the toolbar so the change is visible immediately.
+                    if parts[1] == "theme" {
+                        let _ = proxy_content
+                            .send_event(UserEvent::ApplyTheme(parts[2].to_string()));
+                    }
                 }
             } else if let Some(engine) = msg.strip_prefix("switch_engine:") {
                 let _ = proxy_content.send_event(UserEvent::SwitchEngine(engine.to_string()));
