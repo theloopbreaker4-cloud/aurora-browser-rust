@@ -25,6 +25,8 @@ pub enum UserEvent {
     SwitchEngine(String),
     /// Apply theme name (aurora-dark / aurora-light / aurora-sleep) to the toolbar live.
     ApplyTheme(String),
+    /// Change the OS cursor over the content area. `None` means hide the cursor.
+    SetCursor(Option<tao::window::CursorIcon>),
     /// Bookmark current page (title, url) into bookmarks.json.
     AddBookmark(String, String),
     /// Wipe history.json.
