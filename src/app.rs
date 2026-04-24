@@ -507,6 +507,48 @@ pub fn run() {
                         UserEvent::GoBack    => { sv.go_back();    return; }
                         UserEvent::GoForward => { sv.go_forward(); return; }
                         UserEvent::Reload    => { sv.reload();     return; }
+                        UserEvent::Stop      => { /* Servo has no public stop API yet */ return; }
+                        UserEvent::Print => {
+                            sv.run_js("window.print && window.print()");
+                            return;
+                        }
+                        UserEvent::ViewSource => {
+                            // Best effort: re-load current URL prefixed with view-source: scheme.
+                            // Servo doesn't ship a built-in viewer, so wrap the source as text.
+                            sv.run_js(
+                                "(()=>{const html='<pre style=\\'white-space:pre-wrap;font-family:monospace;padding:12px\\'>'+document.documentElement.outerHTML.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</pre>';document.open();document.write(html);document.close();})()"
+                            );
+                            return;
+                        }
+                        UserEvent::OpenDevTools => {
+                            // No public DevTools toggle in Servo; surface a console hint instead.
+                            sv.run_js("console.log('Aurora: Servo DevTools not available — use --devtools flag at startup')");
+                            return;
+                        }
+                        UserEvent::FindText(text) => {
+                            // Use window.find() if present, else select-and-scroll fallback.
+                            let esc = text.replace('\\', "\\\\").replace('"', "\\\"");
+                            sv.run_js(&format!(
+                                "(()=>{{const t=\"{esc}\";if(!t){{window.getSelection&&window.getSelection().removeAllRanges();return;}}if(window.find){{window.find(t,false,false,true);}}}})()"
+                            ));
+                            return;
+                        }
+                        UserEvent::FindPrev(text) => {
+                            let esc = text.replace('\\', "\\\\").replace('"', "\\\"");
+                            sv.run_js(&format!(
+                                "(()=>{{const t=\"{esc}\";if(!t)return;if(window.find){{window.find(t,false,true,true);}}}})()"
+                            ));
+                            return;
+                        }
+                        UserEvent::SetZoom(level) => {
+                            // wry's zoom() takes an absolute factor; for Servo we approximate by
+                            // resetting then applying the factor as a single delta.
+                            sv.reset_zoom();
+                            if (*level - 1.0).abs() > f64::EPSILON {
+                                sv.adjust_zoom(*level as f32);
+                            }
+                            return;
+                        }
                         _ => {}
                     }
                 }

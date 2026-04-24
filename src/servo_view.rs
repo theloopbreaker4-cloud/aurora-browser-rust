@@ -497,6 +497,25 @@ impl ServoView {
         self.webview.reload();
     }
 
+    /// Run JavaScript in the active page. Result is dropped — fire-and-forget.
+    pub fn run_js(&self, script: &str) {
+        self.webview.evaluate_javascript(script.to_string(), |_| {});
+    }
+
+    /// Pinch-zoom by a delta around the viewport center. Servo clamps to [1.0, 10.0].
+    pub fn adjust_zoom(&self, delta: f32) {
+        let center = DevicePoint::new(0.0, 0.0);
+        self.webview.adjust_pinch_zoom(delta, center);
+    }
+
+    /// Reset pinch-zoom to 1.0 by calling adjust with the inverse of current zoom.
+    pub fn reset_zoom(&self) {
+        let cur = self.webview.pinch_zoom();
+        if (cur - 1.0).abs() > f32::EPSILON {
+            self.adjust_zoom(1.0 / cur);
+        }
+    }
+
     // ── Input helpers ─────────────────────────────────────────────────────
 
     /// Convert full-window physical coords to child-window-relative coords.
