@@ -246,6 +246,64 @@ fn base64_encode(data: &[u8]) -> String {
 /// Counts notify_new_frame_ready calls so we only log the first few.
 static FRAME_LOG_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
+/// Override the cursor of the Servo child HWND's window class so the OS
+/// stops resetting it to the STATIC class default whenever the mouse enters
+/// the child. Without this, tao's set_cursor_icon on the parent gets
+/// overridden the moment Win32 sends WM_SETCURSOR to the child.
+#[cfg(windows)]
+pub fn set_child_window_cursor(child_hwnd: isize, cursor: Option<tao::window::CursorIcon>) {
+    use std::ptr;
+    use tao::window::CursorIcon;
+    use windows_sys::Win32::Foundation::HWND;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        LoadCursorW, SetClassLongPtrW, SetCursor, GCLP_HCURSOR, IDC_APPSTARTING, IDC_ARROW,
+        IDC_CROSS, IDC_HAND, IDC_HELP, IDC_IBEAM, IDC_NO, IDC_SIZEALL, IDC_SIZENESW, IDC_SIZENS,
+        IDC_SIZENWSE, IDC_SIZEWE, IDC_WAIT,
+    };
+
+    // Map tao::CursorIcon to a Win32 IDC_* system cursor id.
+    // Win32 only ships ~14 system cursors; many CSS cursors collapse to similar ones.
+    let idc: *const u16 = match cursor {
+        None => return, // hidden cursor handled at the parent-window level
+        Some(c) => match c {
+            CursorIcon::Default | CursorIcon::Arrow => IDC_ARROW,
+            CursorIcon::Hand | CursorIcon::Grab | CursorIcon::Grabbing => IDC_HAND,
+            CursorIcon::Text | CursorIcon::VerticalText => IDC_IBEAM,
+            CursorIcon::Crosshair | CursorIcon::Cell => IDC_CROSS,
+            CursorIcon::Wait => IDC_WAIT,
+            CursorIcon::Progress => IDC_APPSTARTING,
+            CursorIcon::Help => IDC_HELP,
+            CursorIcon::NotAllowed | CursorIcon::NoDrop => IDC_NO,
+            CursorIcon::Move | CursorIcon::AllScroll => IDC_SIZEALL,
+            CursorIcon::EResize
+            | CursorIcon::WResize
+            | CursorIcon::EwResize
+            | CursorIcon::ColResize => IDC_SIZEWE,
+            CursorIcon::NResize
+            | CursorIcon::SResize
+            | CursorIcon::NsResize
+            | CursorIcon::RowResize => IDC_SIZENS,
+            CursorIcon::NeResize | CursorIcon::SwResize | CursorIcon::NeswResize => IDC_SIZENESW,
+            CursorIcon::NwResize | CursorIcon::SeResize | CursorIcon::NwseResize => IDC_SIZENWSE,
+            // Best-effort mappings for cursors with no direct Win32 equivalent.
+            CursorIcon::Alias | CursorIcon::Copy | CursorIcon::ContextMenu => IDC_ARROW,
+            CursorIcon::ZoomIn | CursorIcon::ZoomOut => IDC_CROSS,
+            _ => IDC_ARROW,
+        },
+    };
+
+    unsafe {
+        let hcursor = LoadCursorW(ptr::null_mut(), idc);
+        if hcursor.is_null() {
+            return;
+        }
+        // Persist on the window class so subsequent WM_SETCURSOR on the child returns this.
+        SetClassLongPtrW(child_hwnd as HWND, GCLP_HCURSOR, hcursor as isize);
+        // Also force-set right now, since the mouse may already be inside the child.
+        SetCursor(hcursor);
+    }
+}
+
 /// Map Servo's CSS-derived cursor to tao's window CursorIcon, which tao forwards
 /// to the platform (Win32 SetCursor / Cocoa NSCursor / GTK). Returns None to
 /// request a hidden cursor (Cursor::None).
@@ -485,6 +543,13 @@ impl ServoView {
                 slog(&format!("bring_to_front: child count={count}, servo_hwnd={}", self.child_hwnd));
             }
         }
+    }
+
+    /// Returns the Win32 child HWND that hosts the Servo render surface.
+    /// Used by the embedder to override the child window's class cursor so
+    /// CSS cursor changes survive WM_SETCURSOR routing.
+    pub fn child_hwnd(&self) -> isize {
+        self.child_hwnd
     }
 
     /// Force-exit the process immediately. Used on window close to avoid
