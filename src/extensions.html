@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Aurora Extensions</title>
+<script>var AURORA_LOCALE=__LOCALE_JSON__;var IPC_TOKEN="__IPC_TOKEN__";</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a1220;color:#cfe0f0;font-family:'Segoe UI',sans-serif;padding:48px 56px;min-height:100vh}
+.page{max-width:920px;margin:0 auto}
+.header{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+.header svg{width:34px;height:34px;stroke:#7fffd4;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+h1{font-size:30px;font-weight:600;color:#7fffd4;letter-spacing:0.5px}
+.subhead{font-size:13px;color:#6f829c;margin-bottom:32px}
+.card{
+    background:rgba(12,18,34,0.92);border:1px solid rgba(60,80,120,0.25);
+    border-radius:14px;padding:28px 32px;margin-bottom:18px;
+}
+.card h2{font-size:15px;font-weight:700;color:#8da0be;margin-bottom:10px;letter-spacing:0.4px;text-transform:uppercase}
+.card p{font-size:13px;color:#a0b4cc;line-height:1.6}
+.coming{
+    display:inline-block;padding:4px 12px;border-radius:999px;
+    background:rgba(200,180,60,0.12);color:#e0c060;
+    font-size:11px;font-weight:700;letter-spacing:0.5px;
+    margin-bottom:12px;
+}
+.placeholder{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;
+    margin-top:18px;
+}
+.ext-tile{
+    background:rgba(8,14,28,0.85);border:1px dashed rgba(60,80,120,0.3);
+    border-radius:10px;padding:18px;text-align:center;
+    color:#3a5070;font-size:12px;
+}
+.ext-tile svg{width:32px;height:32px;stroke:#3a5070;fill:none;stroke-width:1.5;margin-bottom:8px}
+</style></head><body>
+<div class="page">
+<div class="header">
+    <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+    <h1 data-i18n="extensions">Extensions</h1>
+</div>
+<div class="subhead">Manage browser extensions and visit the extension store.</div>
+
+<div class="card">
+    <span class="coming">Coming Soon</span>
+    <h2 data-i18n="extension_manager">Extension Manager</h2>
+    <p>Install, enable, disable, and remove browser extensions. Aurora plans to support the WebExtensions API for compatibility with Chrome and Firefox add-ons.</p>
+    <div class="placeholder">
+        <div class="ext-tile"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>No extensions installed</div>
+    </div>
+</div>
+
+<div class="card">
+    <span class="coming">Coming Soon</span>
+    <h2 data-i18n="extension_store">Extension Store</h2>
+    <p>Browse and install extensions from a curated catalog. Until the store ships, you can side-load unpacked extensions from a local folder.</p>
+</div>
+
+<script>
+try {
+    const L = AURORA_LOCALE;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const k = el.getAttribute('data-i18n');
+        if (L[k]) el.textContent = L[k];
+    });
+} catch(e) {}
+</script>
+</body></html>

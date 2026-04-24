@@ -499,6 +499,21 @@ pub fn run() {
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                             return;
                         }
+                        UserEvent::Navigate(url) if url == "aurora://extensions" => {
+                            sv.load_html(&crate::extensions::get_extensions_html(&ipc_token));
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
+                        UserEvent::Navigate(url) if url == "aurora://incognito" => {
+                            sv.load_html(&crate::incognito::get_incognito_html(&ipc_token));
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
+                        UserEvent::Navigate(url) if url == "aurora://tab_groups" => {
+                            sv.load_html(&crate::tab_groups::get_tab_groups_html(&ipc_token));
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                            return;
+                        }
                         UserEvent::Navigate(url) if url == "aurora://newtab" || url == "aurora://portal" => {
                             sv.load_html(&portal_html_for_loop);
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl("aurora://newtab".to_string()));
@@ -588,6 +603,21 @@ pub fn run() {
                         } else if url == "aurora://test" {
                             if let Some(ref cv) = content_webview_opt {
                                 let _ = cv.load_html(&crate::test_page::get_test_html());
+                            }
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                        } else if url == "aurora://extensions" {
+                            if let Some(ref cv) = content_webview_opt {
+                                let _ = cv.load_html(&crate::extensions::get_extensions_html(&ipc_token));
+                            }
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                        } else if url == "aurora://incognito" {
+                            if let Some(ref cv) = content_webview_opt {
+                                let _ = cv.load_html(&crate::incognito::get_incognito_html(&ipc_token));
+                            }
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                        } else if url == "aurora://tab_groups" {
+                            if let Some(ref cv) = content_webview_opt {
+                                let _ = cv.load_html(&crate::tab_groups::get_tab_groups_html(&ipc_token));
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url.starts_with("aurora://error") {

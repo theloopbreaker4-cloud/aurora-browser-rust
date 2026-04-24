@@ -9,13 +9,16 @@ mod config;
 mod downloads_page;
 mod error;
 mod events;
+mod extensions;
 mod history;
 mod icon;
+mod incognito;
 mod ipc;
 mod portal;
 #[cfg(feature = "servo-engine")]
 mod servo_view;
 mod settings;
+mod tab_groups;
 mod test_page;
 mod toolbar;
 mod webviews;

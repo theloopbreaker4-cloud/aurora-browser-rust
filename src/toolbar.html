@@ -650,11 +650,6 @@ function menuAction(action) {
         updateTabs();
         return;
     }
-    if (action === 'open_incognito' || action === 'incognito') {
-        // Spawn a new incognito window — handled Rust-side later; for now toast.
-        showToast('Incognito mode coming soon');
-        return;
-    }
     ipcSend('menu:' + action);
 }
 
