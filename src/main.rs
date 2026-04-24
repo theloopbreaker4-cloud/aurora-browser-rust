@@ -15,6 +15,7 @@ mod extensions;
 mod history;
 mod icon;
 mod incognito;
+mod internal_server;
 mod ipc;
 mod portal;
 #[cfg(feature = "servo-engine")]
