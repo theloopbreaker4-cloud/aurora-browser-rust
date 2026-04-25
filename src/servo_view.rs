@@ -28,10 +28,10 @@ use servo::{
     ContextMenuAction, ContextMenuItem as ServoContextMenuItem, Cursor as ServoCursor,
     DeviceIndependentPixel, DevicePoint, EmbedderControl, EventLoopWaker, InputEvent,
     KeyboardEvent as ServoKeyboardEvent, LoadStatus, MouseButton as ServoMouseButton,
-    MouseButtonAction, MouseButtonEvent, MouseMoveEvent, NavigationRequest, RenderingContext,
-    SelectElementOptionOrOptgroup, ServoBuilder, ServoUrl, SimpleDialog as ServoSimpleDialog,
-    WebView, WebViewBuilder, WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode,
-    WindowRenderingContext,
+    MouseButtonAction, MouseButtonEvent, MouseMoveEvent, NavigationRequest, Notification,
+    PermissionFeature, PermissionRequest, RenderingContext, SelectElementOptionOrOptgroup,
+    ServoBuilder, ServoUrl, SimpleDialog as ServoSimpleDialog, WebView, WebViewBuilder,
+    WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode, WindowRenderingContext,
 };
 use euclid::Scale;
 use tao::event_loop::EventLoopProxy;
@@ -200,6 +200,62 @@ impl WebViewDelegate for AuroraDelegate {
     fn notify_page_title_changed(&self, _webview: WebView, title: Option<String>) {
         if let Some(t) = title {
             let _ = self.state.proxy.send_event(UserEvent::UpdateTitle(t));
+        }
+    }
+
+    fn request_permission(&self, _webview: WebView, request: PermissionRequest) {
+        // Trust-by-default for the test environment so navigator.permissions
+        // and getCurrentPosition / Notification.requestPermission etc. complete
+        // instead of silently denying. Camera/microphone/bluetooth still need
+        // explicit user consent; we deny those for now.
+        match request.feature() {
+            PermissionFeature::Geolocation
+            | PermissionFeature::Notifications
+            | PermissionFeature::Push
+            | PermissionFeature::PersistentStorage
+            | PermissionFeature::BackgroundSync
+            | PermissionFeature::DeviceInfo => request.allow(),
+            PermissionFeature::Camera
+            | PermissionFeature::Microphone
+            | PermissionFeature::Speaker
+            | PermissionFeature::Bluetooth
+            | PermissionFeature::Midi => request.deny(),
+        }
+    }
+
+    fn show_notification(&self, _webview: WebView, notification: Notification) {
+        // Win32 toast (proper Action Center notification) needs WinRT XML —
+        // for now surface as a non-modal MessageBox-style popup so it's at
+        // least visible. A toast wrapper is a follow-up.
+        #[cfg(windows)]
+        {
+            use windows_sys::Win32::Foundation::HWND;
+            use windows_sys::Win32::UI::WindowsAndMessaging::{
+                MessageBoxW, MB_ICONINFORMATION, MB_OK,
+            };
+            let title: Vec<u16> = notification
+                .title
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect();
+            let body: Vec<u16> = notification
+                .body
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect();
+            // HWND_DESKTOP so the message box is non-blocking on the parent and the page.
+            unsafe {
+                MessageBoxW(
+                    self.state.parent_hwnd as HWND,
+                    body.as_ptr(),
+                    title.as_ptr(),
+                    MB_OK | MB_ICONINFORMATION,
+                );
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = notification;
         }
     }
 
