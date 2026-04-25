@@ -723,7 +723,29 @@ impl ServoView {
         });
 
         let waker: Box<dyn EventLoopWaker> = Box::new(TaoWaker(Arc::new(Mutex::new(proxy))));
-        let servo = ServoBuilder::default().event_loop_waker(waker).build();
+
+        // Turn on Web platform features that Servo gates behind preferences.
+        // Each one is a small but visible win in aurora://test:
+        // - dom_notification_enabled       -> window.Notification constructor
+        // - dom_intersection_observer_enabled -> IntersectionObserver
+        // - dom_indexeddb_enabled          -> indexedDB.open() works
+        // - dom_serviceworker_enabled      -> navigator.serviceWorker
+        // - dom_async_clipboard_enabled    -> navigator.clipboard.writeText/readText
+        // - dom_geolocation_enabled        -> navigator.geolocation
+        // - dom_offscreen_canvas_enabled   -> OffscreenCanvas (cheap to enable)
+        let mut prefs = servo::Preferences::default();
+        prefs.dom_notification_enabled = true;
+        prefs.dom_intersection_observer_enabled = true;
+        prefs.dom_indexeddb_enabled = true;
+        prefs.dom_serviceworker_enabled = true;
+        prefs.dom_async_clipboard_enabled = true;
+        prefs.dom_geolocation_enabled = true;
+        prefs.dom_offscreen_canvas_enabled = true;
+
+        let servo = ServoBuilder::default()
+            .event_loop_waker(waker)
+            .preferences(prefs)
+            .build();
 
         let url = ServoUrl::parse(initial_url)
             .unwrap_or_else(|_| ServoUrl::parse("https://www.google.com").unwrap());
