@@ -133,6 +133,11 @@ struct ServoState {
     proxy: EventLoopProxy<UserEvent>,
     /// Parent (Aurora) HWND used as the owner for native modal dialogs (file picker etc.).
     parent_hwnd: isize,
+    /// `http://127.0.0.1:<port>` of the loopback server, if any. URLs that
+    /// start with this prefix are rewritten back to `aurora://<path>` for
+    /// display in the toolbar address bar — the user sees the friendly URL
+    /// even though Servo is loading the loopback alias.
+    aurora_origin: Option<String>,
 }
 
 struct AuroraDelegate {
@@ -212,10 +217,23 @@ impl WebViewDelegate for AuroraDelegate {
                 let _ = self.state.proxy.send_event(UserEvent::LoadEnd);
                 if let Some(url) = webview.url() {
                     let url_s = url.to_string();
+                    // Rewrite loopback http://127.0.0.1:<port>/<path> back to
+                    // aurora://<path> for the toolbar so the user sees the
+                    // friendly internal URL.
+                    let display_url = match self.state.aurora_origin.as_deref() {
+                        Some(origin) if url_s.starts_with(origin) => {
+                            let rest = url_s[origin.len()..]
+                                .trim_start_matches('/')
+                                .trim_end_matches('/');
+                            let path = if rest.is_empty() { "newtab" } else { rest };
+                            format!("aurora://{}", path)
+                        }
+                        _ => url_s.clone(),
+                    };
                     let _ = self
                         .state
                         .proxy
-                        .send_event(UserEvent::UpdateUrl(url_s.clone()));
+                        .send_event(UserEvent::UpdateUrl(display_url));
                     // Push history (helper skips aurora:// and data: URLs internally)
                     let title = webview.page_title().unwrap_or_default();
                     crate::history::push_history_entry(&title, &url_s);
@@ -600,6 +618,7 @@ impl ServoView {
         toolbar_height_phys: u32,
         initial_url: &str,
         scale_factor: f64,
+        aurora_origin: Option<String>,
     ) -> Result<Self, String> {
         // Get the parent HWND from tao
         let parent_hwnd = {
@@ -644,6 +663,7 @@ impl ServoView {
             needs_paint: Cell::new(false),
             proxy: proxy.clone(),
             parent_hwnd,
+            aurora_origin,
         });
 
         let waker: Box<dyn EventLoopWaker> = Box::new(TaoWaker(Arc::new(Mutex::new(proxy))));
