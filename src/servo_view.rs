@@ -236,38 +236,44 @@ impl WebViewDelegate for AuroraDelegate {
     }
 
     fn show_notification(&self, _webview: WebView, notification: Notification) {
-        // Win32 toast (proper Action Center notification) needs WinRT XML —
-        // for now surface as a non-modal MessageBox-style popup so it's at
-        // least visible. A toast wrapper is a follow-up.
-        #[cfg(windows)]
-        {
-            use windows_sys::Win32::Foundation::HWND;
-            use windows_sys::Win32::UI::WindowsAndMessaging::{
-                MessageBoxW, MB_ICONINFORMATION, MB_OK,
-            };
-            let title: Vec<u16> = notification
-                .title
-                .encode_utf16()
-                .chain(std::iter::once(0))
-                .collect();
-            let body: Vec<u16> = notification
-                .body
-                .encode_utf16()
-                .chain(std::iter::once(0))
-                .collect();
-            // HWND_DESKTOP so the message box is non-blocking on the parent and the page.
-            unsafe {
-                MessageBoxW(
-                    self.state.parent_hwnd as HWND,
-                    body.as_ptr(),
-                    title.as_ptr(),
-                    MB_OK | MB_ICONINFORMATION,
-                );
-            }
+        // Try the proper platform toast (Action Center on Windows, Notification
+        // Center on macOS, libnotify on Linux) via notify-rust. If that fails
+        // for any reason — most commonly because the calling exe is not
+        // registered with the system as a notification source — fall back to a
+        // modal MessageBox so the page's notification at least surfaces.
+        let mut n = notify_rust::Notification::new();
+        n.summary(&notification.title);
+        n.body(&notification.body);
+        if !notification.tag.is_empty() {
+            // notify-rust uses the appname as tag-equivalent on Windows toast.
+            n.appname(&notification.tag);
         }
-        #[cfg(not(windows))]
-        {
-            let _ = notification;
+        if let Err(_) = n.show() {
+            #[cfg(windows)]
+            {
+                use windows_sys::Win32::Foundation::HWND;
+                use windows_sys::Win32::UI::WindowsAndMessaging::{
+                    MessageBoxW, MB_ICONINFORMATION, MB_OK,
+                };
+                let title: Vec<u16> = notification
+                    .title
+                    .encode_utf16()
+                    .chain(std::iter::once(0))
+                    .collect();
+                let body: Vec<u16> = notification
+                    .body
+                    .encode_utf16()
+                    .chain(std::iter::once(0))
+                    .collect();
+                unsafe {
+                    MessageBoxW(
+                        self.state.parent_hwnd as HWND,
+                        body.as_ptr(),
+                        title.as_ptr(),
+                        MB_OK | MB_ICONINFORMATION,
+                    );
+                }
+            }
         }
     }
 
