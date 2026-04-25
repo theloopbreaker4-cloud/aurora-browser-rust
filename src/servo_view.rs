@@ -25,14 +25,15 @@ use raw_window_handle::{
     Win32WindowHandle, WindowHandle, WindowsDisplayHandle,
 };
 use servo::{
-    ContextMenuAction, ContextMenuItem as ServoContextMenuItem, Cursor as ServoCursor,
-    DeviceIndependentPixel, DevicePoint, EmbedderControl, EventLoopWaker, InputEvent,
-    KeyboardEvent as ServoKeyboardEvent, LoadStatus, MouseButton as ServoMouseButton,
+    AllowOrDenyRequest, ContextMenuAction, ContextMenuItem as ServoContextMenuItem,
+    Cursor as ServoCursor, DeviceIndependentPixel, DevicePoint, EmbedderControl, EventLoopWaker,
+    InputEvent, KeyboardEvent as ServoKeyboardEvent, LoadStatus, MouseButton as ServoMouseButton,
     MouseButtonAction, MouseButtonEvent, MouseMoveEvent, NavigationRequest, Notification,
     PermissionFeature, PermissionRequest, RenderingContext, SelectElementOptionOrOptgroup,
     ServoBuilder, ServoUrl, SimpleDialog as ServoSimpleDialog, WebView, WebViewBuilder,
     WebViewDelegate, WebViewPoint, WheelDelta, WheelEvent, WheelMode, WindowRenderingContext,
 };
+use servo::protocol_handler::ProtocolHandlerRegistration;
 use euclid::Scale;
 use tao::event_loop::EventLoopProxy;
 use tao::window::Window;
@@ -201,6 +202,17 @@ impl WebViewDelegate for AuroraDelegate {
         if let Some(t) = title {
             let _ = self.state.proxy.send_event(UserEvent::UpdateTitle(t));
         }
+    }
+
+    fn request_protocol_handler(
+        &self,
+        _webview: WebView,
+        _registration: ProtocolHandlerRegistration,
+        request: AllowOrDenyRequest,
+    ) {
+        // Trust pages to register protocol handlers in this trial environment.
+        // A future iteration should pop a real consent dialog (see roadmap).
+        request.allow();
     }
 
     fn request_permission(&self, _webview: WebView, request: PermissionRequest) {
@@ -742,6 +754,7 @@ impl ServoView {
         prefs.dom_geolocation_enabled = true;
         prefs.dom_offscreen_canvas_enabled = true;
         prefs.dom_webgl2_enabled = true;
+        prefs.dom_navigator_protocol_handlers_enabled = true;
 
         let servo = ServoBuilder::default()
             .event_loop_waker(waker)
