@@ -108,6 +108,7 @@ pub fn build_resolver(ipc_token: String) -> RouteResolver {
             "/extensions" => crate::extensions::get_extensions_html(&ipc_token),
             "/incognito" => crate::incognito::get_incognito_html(&ipc_token),
             "/tab_groups" => crate::tab_groups::get_tab_groups_html(&ipc_token),
+            "/benchmarks" => crate::benchmarks::get_benchmarks_html(&ipc_token),
             _ => return None,
         };
         Some(("text/html".to_string(), html))

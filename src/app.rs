@@ -522,6 +522,7 @@ pub fn run() {
                                     "extensions" => crate::extensions::get_extensions_html(&ipc_token),
                                     "incognito" => crate::incognito::get_incognito_html(&ipc_token),
                                     "tab_groups" => crate::tab_groups::get_tab_groups_html(&ipc_token),
+                                    "benchmarks" => crate::benchmarks::get_benchmarks_html(&ipc_token),
                                     _ => portal_html_for_loop.clone(),
                                 };
                                 sv.load_html(&html);
@@ -633,6 +634,11 @@ pub fn run() {
                         } else if url == "aurora://tab_groups" {
                             if let Some(ref cv) = content_webview_opt {
                                 let _ = cv.load_html(&crate::tab_groups::get_tab_groups_html(&ipc_token));
+                            }
+                            let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
+                        } else if url == "aurora://benchmarks" {
+                            if let Some(ref cv) = content_webview_opt {
+                                let _ = cv.load_html(&crate::benchmarks::get_benchmarks_html(&ipc_token));
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url.starts_with("aurora://error") {

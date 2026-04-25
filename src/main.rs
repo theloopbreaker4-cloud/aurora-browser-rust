@@ -4,6 +4,7 @@
 
 mod about;
 mod app;
+mod benchmarks;
 mod bookmarks_page;
 mod config;
 #[cfg(all(windows, feature = "servo-engine"))]

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Aurora Benchmarks</title>
+<script>var AURORA_LOCALE=__LOCALE_JSON__;var IPC_TOKEN="__IPC_TOKEN__";</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a1220;color:#cfe0f0;font-family:'Segoe UI',sans-serif;padding:32px 56px;min-height:100vh}
+.page{max-width:1100px;margin:0 auto}
+.header{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.header svg{width:30px;height:30px;stroke:#7fffd4;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+h1{font-size:30px;font-weight:600;color:#7fffd4;letter-spacing:0.5px}
+.subhead{font-size:13px;color:#6f829c;margin-bottom:28px;max-width:780px;line-height:1.6}
+.section{
+    background:rgba(12,18,34,0.92);border:1px solid rgba(60,80,120,0.25);
+    border-radius:14px;padding:22px 26px;margin-bottom:18px;
+}
+.section h2{font-size:13px;font-weight:700;color:#8da0be;margin-bottom:14px;letter-spacing:0.5px;text-transform:uppercase}
+.grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;
+}
+.card{
+    background:rgba(8,14,28,0.85);border:1px solid rgba(40,60,100,0.25);
+    border-radius:10px;padding:16px 18px;cursor:pointer;
+    transition:background 0.15s,border-color 0.2s,transform 0.1s;
+    display:flex;flex-direction:column;gap:6px;
+}
+.card:hover{background:rgba(12,22,44,0.92);border-color:rgba(0,255,170,0.25);transform:translateY(-2px)}
+.card .title{font-size:14px;color:#c0d8e8;font-weight:600;display:flex;align-items:center;gap:8px}
+.card .title svg{width:14px;height:14px;stroke:#7fffd4;fill:none;stroke-width:2;flex-shrink:0}
+.card .url{font-size:11px;color:#3a6080;font-family:Consolas,monospace}
+.card .desc{font-size:12px;color:#8aa4b8;line-height:1.5;margin-top:4px}
+.card .tag{
+    display:inline-block;font-size:10px;padding:2px 8px;border-radius:999px;
+    background:rgba(60,160,160,0.12);color:#70b0b0;letter-spacing:0.4px;
+    align-self:flex-start;margin-top:6px;
+}
+.tag.perf{background:rgba(180,120,80,0.12);color:#d09060}
+.tag.spec{background:rgba(120,80,180,0.12);color:#a080d0}
+.tag.compat{background:rgba(80,160,80,0.12);color:#80c080}
+.note{
+    background:rgba(200,180,60,0.08);border:1px solid rgba(200,180,60,0.18);
+    border-radius:10px;padding:12px 16px;margin-bottom:18px;
+    font-size:12px;color:#c0a060;line-height:1.6;
+}
+.note strong{color:#e0c060}
+</style></head><body>
+<div class="page">
+<div class="header">
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <h1>Engine Benchmarks</h1>
+</div>
+<div class="subhead">External tests that probe what the active engine actually supports.
+Use these to spot gaps that aurora://test (which only checks API surface) can miss
+&mdash; especially layout/rendering correctness and real-world JS performance.</div>
+
+<div class="note">
+    <strong>How to read results:</strong> on Servo many of these will fail or score
+    low &mdash; that is the point. They show concrete features that need work upstream
+    (stylo / WebRender / Servo's script crate). Run the same benchmark on the
+    WebView2 engine to see how things <em>should</em> look, and on Servo to see
+    where we are.
+</div>
+
+<div class="section">
+    <h2>Standards Compliance</h2>
+    <div class="grid">
+        <div class="card" onclick="open_('https://html5test.com')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                html5test.com
+            </div>
+            <div class="url">html5test.com</div>
+            <div class="desc">Aggregate score 0-555 covering every HTML5 / DOM / forms / media / location feature. Best single number for "how complete is this engine".</div>
+            <span class="tag spec">Spec coverage</span>
+        </div>
+        <div class="card" onclick="open_('https://wpt.live')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Web Platform Tests
+            </div>
+            <div class="url">wpt.live</div>
+            <div class="desc">Official W3C/WHATWG conformance suite. ~2 million tests written by spec authors. Drill into any subsystem (CSS, DOM, fetch, ...) and see exact pass/fail rates.</div>
+            <span class="tag spec">Official spec</span>
+        </div>
+        <div class="card" onclick="open_('http://acid3.acidtests.org')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Acid3
+            </div>
+            <div class="url">acid3.acidtests.org</div>
+            <div class="desc">Classic 100-point CSS / SVG / DOM / ECMAScript test. Old but quick &mdash; good smoke test that nothing fundamental is broken.</div>
+            <span class="tag spec">Smoke test</span>
+        </div>
+        <div class="card" onclick="open_('https://caniuse.com')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                Can I Use
+            </div>
+            <div class="url">caniuse.com</div>
+            <div class="desc">Per-feature support matrix. Search any web feature and see which engines (and versions) ship it. Useful while triaging "why doesn't this site work".</div>
+            <span class="tag compat">Reference</span>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Performance</h2>
+    <div class="grid">
+        <div class="card" onclick="open_('https://browserbench.org/Speedometer3.0/')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="8"/><line x1="12" y1="14" x2="16" y2="10"/><path d="M12 4v2"/></svg>
+                Speedometer 3
+            </div>
+            <div class="url">browserbench.org/Speedometer3.0</div>
+            <div class="desc">Industry-standard SPA benchmark. Runs identical TodoMVC-style apps in React, Vue, Angular, Svelte, Preact, Lit, vanilla JS, etc. and measures runs/min. The closest thing to "how does this engine feel on a real app".</div>
+            <span class="tag perf">SPA perf</span>
+        </div>
+        <div class="card" onclick="open_('https://browserbench.org/MotionMark1.3/')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                MotionMark
+            </div>
+            <div class="url">browserbench.org/MotionMark1.3</div>
+            <div class="desc">Stress test for the renderer: animated SVG, paths, leaves, design, text, images, suits. Each subtest scales complexity until FPS drops below 50. Output is a perceptual score.</div>
+            <span class="tag perf">Render perf</span>
+        </div>
+        <div class="card" onclick="open_('https://jsbench.dev')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                jsbench.dev
+            </div>
+            <div class="url">jsbench.dev</div>
+            <div class="desc">Quick microbenchmarks for arbitrary JS snippets. Useful when chasing a specific perf regression in Servo's script engine.</div>
+            <span class="tag perf">JS micro</span>
+        </div>
+        <div class="card" onclick="open_('https://browserbench.org/JetStream2.2/')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                JetStream 2.2
+            </div>
+            <div class="url">browserbench.org/JetStream2.2</div>
+            <div class="desc">Pure JS / WASM throughput &amp; latency benchmark. Includes startup time which matters for short-lived workloads.</div>
+            <span class="tag perf">JS engine</span>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Aurora Built-in</h2>
+    <div class="grid">
+        <div class="card" onclick="navigate_('aurora://test')">
+            <div class="title">
+                <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Aurora Engine Tests
+            </div>
+            <div class="url">aurora://test</div>
+            <div class="desc">Local feature-detection suite. Catches regressions when an API stops being exposed. Does NOT prove the API actually works correctly &mdash; for that, use the external benchmarks above.</div>
+            <span class="tag compat">Internal</span>
+        </div>
+    </div>
+</div>
+
+<script>
+function ipcSend(msg){
+    if(window.ipc){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+    else { window.location.href="aurora-ipc:"+encodeURIComponent(IPC_TOKEN+":"+msg); }
+}
+function navigate_(url){ ipcSend("navigate:"+url); }
+function open_(url){ ipcSend("navigate:"+url); }
+</script>
+</body></html>
