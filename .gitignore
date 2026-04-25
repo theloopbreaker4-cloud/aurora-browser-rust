@@ -8,6 +8,8 @@ Cargo.lock
 # User data (personal, machine-specific)
 config.json
 bookmarks.json
+servo_log.txt
+IndexedDB/
 
 # Compiled icon generator
 gen_icon.exe
