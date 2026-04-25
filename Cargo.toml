@@ -1,6 +1,6 @@
 [package]
 name = "aurora"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 license = "MIT"
 authors = ["theloopbreaker4-cloud"]
@@ -35,7 +35,7 @@ euclid = { version = "0.22", optional = true }
 [dependencies.servo]
 path = "../ServoRust/servo/components/servo"
 default-features = false
-features = ["baked-in-resources"]
+features = ["baked-in-resources", "gamepad"]
 optional = true
 
 [features]
