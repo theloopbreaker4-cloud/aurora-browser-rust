@@ -129,6 +129,7 @@ pub fn run() {
             toolbar_phys,
             &url,
             dpr,
+            aurora_origin.clone(),
         ) {
             Ok(sv) => {
                 if startup_url.starts_with("aurora://") {
