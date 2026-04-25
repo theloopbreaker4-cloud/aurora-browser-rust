@@ -1,6 +1,6 @@
 [package]
 name = "aurora"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2021"
 license = "MIT"
 authors = ["theloopbreaker4-cloud"]
@@ -50,3 +50,19 @@ winres = "0.1"
 
 [patch.crates-io]
 wry = { path = "wry-patched" }
+
+# Aurora local stylo patch (2026-04-25): unblocks :has() selector and
+# backdrop-filter property parsing. Local clone at d:/stylo, pinned to
+# upstream rev 96ceb5405b plus two small patches in
+# style/servo/selector_parser.rs and style/properties/longhands.toml.
+# This must be replicated here because Aurora has its own Cargo.lock and
+# does not inherit [patch] sections from ServoRust's workspace.
+[patch."https://github.com/servo/stylo"]
+selectors = { path = "d:/stylo/selectors" }
+servo_arc = { path = "d:/stylo/servo_arc" }
+stylo = { path = "d:/stylo/style" }
+stylo_atoms = { path = "d:/stylo/stylo_atoms" }
+stylo_dom = { path = "d:/stylo/stylo_dom" }
+stylo_malloc_size_of = { path = "d:/stylo/malloc_size_of" }
+stylo_static_prefs = { path = "d:/stylo/stylo_static_prefs" }
+stylo_traits = { path = "d:/stylo/style_traits" }
