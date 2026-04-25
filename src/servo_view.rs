@@ -741,6 +741,7 @@ impl ServoView {
         prefs.dom_async_clipboard_enabled = true;
         prefs.dom_geolocation_enabled = true;
         prefs.dom_offscreen_canvas_enabled = true;
+        prefs.dom_webgl2_enabled = true;
 
         let servo = ServoBuilder::default()
             .event_loop_waker(waker)
