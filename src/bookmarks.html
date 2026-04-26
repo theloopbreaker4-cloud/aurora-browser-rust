@@ -25,7 +25,10 @@ h1{font-size:28px;font-weight:600;color:#7fffd4;letter-spacing:0.5px}
     transition:border-color 0.2s,box-shadow 0.2s;
 }
 .btn-add:hover{border-color:rgba(0,255,170,0.5);box-shadow:0 4px 16px rgba(0,255,170,0.08)}
-.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+/* repeat(auto-fill, minmax) is buggy in some Servo layout versions —
+   fall back to flex-wrap which behaves identically for this card grid. */
+.bm-grid{display:flex;flex-wrap:wrap;gap:12px}
+.bm-card{flex:1 1 240px;min-width:240px;max-width:calc(33.333% - 8px)}
 .bm-card{
     background:rgba(8,14,28,0.85);border:1px solid rgba(40,60,100,0.2);
     border-radius:12px;padding:14px 16px;
