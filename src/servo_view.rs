@@ -867,10 +867,11 @@ impl ServoView {
         prefs.dom_visual_viewport_enabled = true;
         // - WebVTT: <track kind="subtitles"> on <video>.
         prefs.dom_webvtt_enabled = true;
-        // - WebGPU: modern graphics API; without this, WebGPU demos and
-        //   anything using @webgpu/types hits "navigator.gpu is undefined".
-        //   wgpu backend defaults already set elsewhere.
-        prefs.dom_webgpu_enabled = true;
+        // - WebGPU: deferred. Enabling dom_webgpu_enabled without a working
+        //   wgpu backend on the platform appears to break portal rendering
+        //   (user reported empty newtab page after enabling). Re-enable
+        //   together with a verified Win32 wgpu adapter init.
+        // prefs.dom_webgpu_enabled = true;
 
         // ── Default fonts: pick something that exists on every Windows 10/11
         // install AND covers a wide Unicode range. Without this, Servo's
