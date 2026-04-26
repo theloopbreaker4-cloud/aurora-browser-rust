@@ -13,6 +13,7 @@ mod downloads_page;
 mod error;
 mod events;
 mod extensions;
+mod feedback;
 mod history;
 mod icon;
 mod incognito;

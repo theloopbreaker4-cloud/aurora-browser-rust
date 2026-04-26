@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Aurora Feedback</title>
+<script>var AURORA_LOCALE=__LOCALE_JSON__;var AURORA_CONFIG=__CONFIG_JSON__;var IPC_TOKEN="__IPC_TOKEN__";var DIAG_INFO=__DIAG_JSON__;</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a1220;color:#cfe0f0;font-family:'Segoe UI',sans-serif;padding:32px 56px;min-height:100vh}
+.page{max-width:880px;margin:0 auto}
+.header{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.header svg{width:28px;height:28px;stroke:#ff8080;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+h1{font-size:28px;font-weight:600;color:#ff9090;letter-spacing:0.5px}
+.subhead{font-size:13px;color:#6f829c;margin-bottom:24px;max-width:680px;line-height:1.6}
+.section{background:rgba(12,18,34,0.92);border:1px solid rgba(60,80,120,0.25);border-radius:14px;padding:22px 26px;margin-bottom:14px}
+.section h2{font-size:13px;font-weight:700;color:#8da0be;margin-bottom:14px;letter-spacing:0.5px;text-transform:uppercase}
+label{display:block;font-size:12px;color:#8aa4b8;margin-bottom:6px;letter-spacing:0.3px}
+input[type=text],textarea,select{
+    width:100%;background:#0a1020;color:#cfe0f0;
+    border:1px solid rgba(60,80,120,0.35);border-radius:8px;
+    padding:10px 12px;font-size:13px;outline:none;
+    font-family:inherit;
+}
+textarea{min-height:140px;resize:vertical;line-height:1.5}
+input:focus,textarea:focus,select:focus{border-color:rgba(255,140,140,0.4);box-shadow:0 0 0 2px rgba(255,140,140,0.1)}
+.row{margin-bottom:14px}
+.row:last-child{margin-bottom:0}
+.diag{
+    background:#080d18;border:1px solid rgba(60,80,120,0.2);
+    border-radius:10px;padding:14px 16px;font-family:Consolas,monospace;
+    font-size:11px;color:#8aa4b8;line-height:1.7;white-space:pre-wrap;word-break:break-all;
+}
+.diag .key{color:#80b0c0}
+.diag .val{color:#cfe0f0}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#a0b4cc;margin-top:8px}
+.checkbox-row input{width:16px;height:16px;cursor:pointer}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.btn{
+    padding:10px 22px;font-size:13px;border-radius:8px;cursor:pointer;
+    border:1px solid rgba(60,80,120,0.35);background:#0a1020;color:#cfe0f0;
+    transition:border-color 0.15s,box-shadow 0.15s;
+}
+.btn:hover{border-color:rgba(0,255,170,0.3)}
+.btn.primary{
+    background:rgba(255,120,120,0.15);color:#ff9090;
+    border-color:rgba(255,140,140,0.4);
+}
+.btn.primary:hover{border-color:rgba(255,160,160,0.7);box-shadow:0 4px 16px rgba(255,120,120,0.15)}
+.toast{
+    display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:rgba(60,160,100,0.95);color:#fff;
+    padding:10px 24px;border-radius:8px;font-size:13px;
+    z-index:1000;
+}
+.toast.show{display:block}
+</style></head><body>
+<div class="page">
+<div class="header">
+    <svg viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 0 0-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>
+    <h1>Send Feedback / Report a Bug</h1>
+</div>
+<div class="subhead">Found something broken or weird? Tell us. Aurora can attach diagnostic info
+(active engine, version, log tail) so we can reproduce. You stay in control of what gets included.</div>
+
+<div class="section">
+    <h2>What happened?</h2>
+    <div class="row">
+        <label for="kind">Type</label>
+        <select id="kind">
+            <option value="bug">Bug — something is broken</option>
+            <option value="feature">Feature request</option>
+            <option value="question">Question</option>
+            <option value="other">Other feedback</option>
+        </select>
+    </div>
+    <div class="row">
+        <label for="title">Short summary</label>
+        <input id="title" type="text" placeholder="e.g. react.dev crashes on Servo">
+    </div>
+    <div class="row">
+        <label for="url">Page where you noticed it (optional)</label>
+        <input id="url" type="text" placeholder="https://...">
+    </div>
+    <div class="row">
+        <label for="body">Details — what did you do, what did you expect, what happened</label>
+        <textarea id="body" placeholder="Steps to reproduce, screenshots, console errors, anything that would help us see it on our side..."></textarea>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Diagnostic info (auto-collected)</h2>
+    <div class="diag" id="diag">loading...</div>
+    <div class="checkbox-row">
+        <input id="includeDiag" type="checkbox" checked>
+        <label for="includeDiag" style="margin:0;cursor:pointer">Include this diagnostic info with my report</label>
+    </div>
+</div>
+
+<div class="actions">
+    <button class="btn" onclick="window.history.back()">Cancel</button>
+    <button class="btn primary" onclick="submit()">Open issue on GitHub</button>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function ipcSend(msg){
+    if(window.ipc){ window.ipc.postMessage(IPC_TOKEN+":"+msg); }
+    else { window.location.href="aurora-ipc:"+encodeURIComponent(IPC_TOKEN+":"+msg); }
+}
+
+// Render diagnostic info
+(function renderDiag(){
+    const d = DIAG_INFO || {};
+    const lines = [];
+    function row(k, v){ lines.push(`<span class="key">${k}</span>: <span class="val">${escapeHtml(v)}</span>`); }
+    row('Aurora version', d.aurora_version || 'unknown');
+    row('Active engine',  d.engine || 'unknown');
+    row('OS',             d.os || navigator.platform || 'unknown');
+    row('User agent',     navigator.userAgent || 'unknown');
+    row('Screen',         (screen.width || '?') + 'x' + (screen.height || '?'));
+    row('Locale',         (AURORA_CONFIG && AURORA_CONFIG.language) || navigator.language || 'unknown');
+    row('Theme',          (AURORA_CONFIG && AURORA_CONFIG.theme) || 'aurora-dark');
+    if (d.log_tail && d.log_tail.length) {
+        lines.push('');
+        lines.push('<span class="key">--- last lines of servo_log.txt ---</span>');
+        d.log_tail.forEach(l => lines.push('<span class="val">'+escapeHtml(l)+'</span>'));
+    }
+    document.getElementById('diag').innerHTML = lines.join('\n');
+})();
+
+function escapeHtml(s){ const d=document.createElement('div');d.textContent=String(s);return d.innerHTML; }
+
+function submit(){
+    const kind = document.getElementById('kind').value;
+    const title = document.getElementById('title').value.trim();
+    const url = document.getElementById('url').value.trim();
+    const body = document.getElementById('body').value.trim();
+    const includeDiag = document.getElementById('includeDiag').checked;
+
+    if (!title || !body) {
+        showToast('Please fill in both summary and details', '#c06060');
+        return;
+    }
+
+    let issueBody = body;
+    if (url) issueBody = '**Page:** ' + url + '\n\n' + issueBody;
+    if (includeDiag) {
+        const d = DIAG_INFO || {};
+        issueBody += '\n\n---\n**Diagnostic info**\n```\n';
+        issueBody += 'Aurora version: ' + (d.aurora_version || 'unknown') + '\n';
+        issueBody += 'Active engine:  ' + (d.engine || 'unknown') + '\n';
+        issueBody += 'OS:             ' + (d.os || navigator.platform || 'unknown') + '\n';
+        issueBody += 'User agent:     ' + navigator.userAgent + '\n';
+        issueBody += 'Screen:         ' + screen.width + 'x' + screen.height + '\n';
+        if (d.log_tail && d.log_tail.length) {
+            issueBody += '\n--- servo_log.txt tail ---\n';
+            issueBody += d.log_tail.join('\n');
+        }
+        issueBody += '\n```';
+    }
+
+    const labels = encodeURIComponent(kind);
+    const t = encodeURIComponent('[' + kind + '] ' + title);
+    const b = encodeURIComponent(issueBody);
+    const ghUrl = 'https://github.com/theloopbreaker4-cloud/AuroraBrowserRust/issues/new?labels=' + labels + '&title=' + t + '&body=' + b;
+    ipcSend('navigate:' + ghUrl);
+}
+
+function showToast(msg, color){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    if (color) t.style.background = color;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body></html>
