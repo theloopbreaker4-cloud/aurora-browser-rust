@@ -51,7 +51,8 @@ mod child_window {
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         CreateWindowExW, DefWindowProcW, GetClassInfoExW, RegisterClassExW, SetCursor,
         SetWindowPos, CS_HREDRAW, CS_VREDRAW, IDC_ARROW, LoadCursorW, SWP_NOACTIVATE, SWP_NOZORDER,
-        WM_SETCURSOR, WNDCLASSEXW, WS_CHILD, WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_VISIBLE,
+        WM_SETCURSOR, WNDCLASSEXW, WS_CHILD, WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_EX_TRANSPARENT,
+        WS_VISIBLE,
     };
 
     // Custom window class so WM_SETCURSOR routing is under our control.
@@ -130,13 +131,22 @@ mod child_window {
 
     /// Create a child HWND inside `parent_hwnd` at position (x, y) with given size.
     /// Returns the child HWND as isize (0 on failure).
+    ///
+    /// WS_EX_TRANSPARENT is critical: it tells Win32 hit-testing to skip this
+    /// window entirely. Without it, mouse events landing on the Servo render
+    /// surface get delivered to the child HWND (whose WindowProc is just
+    /// DefWindowProcW), so tao on the parent never sees CursorMoved /
+    /// MouseInput and Servo never receives the on_mouse_* forwards. Result:
+    /// links don't click, no hover cursor, settings page inert. With this
+    /// flag, parent tao gets all events and our app.rs handler forwards them
+    /// to ServoView::on_mouse_*.
     pub fn create(parent_hwnd: isize, x: i32, y: i32, width: i32, height: i32) -> isize {
         register_class();
         let hinstance = unsafe { GetModuleHandleW(ptr::null()) };
         let style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
         unsafe {
             CreateWindowExW(
-                0,
+                WS_EX_TRANSPARENT,
                 CLASS_NAME.as_ptr(),
                 ptr::null(),
                 style,
