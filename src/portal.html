@@ -39,10 +39,20 @@ body {
 .portal-title {
     font-size: 44px; font-weight: 600;
     letter-spacing: 10px; text-transform: none;
-    background: linear-gradient(90deg,#a8ffe8,#6fe7ff,#9fffd1);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    /* Solid-color fallback for engines without background-clip:text (Servo).
+       Browsers that support clip-text override via the @supports block below. */
+    color: #9fffd1;
     font-family: 'Gabriola', 'Segoe Script', 'Palatino Linotype', 'Georgia', serif;
     filter: drop-shadow(0 0 14px rgba(0,255,200,0.45)) drop-shadow(0 0 30px rgba(0,255,200,0.18));
+}
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+    .portal-title {
+        background: linear-gradient(90deg,#a8ffe8,#6fe7ff,#9fffd1);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
 }
 .portal-search-wrap {
     width: 560px; max-width: 85%; height: 44px;
