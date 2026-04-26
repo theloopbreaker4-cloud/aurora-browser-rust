@@ -872,6 +872,23 @@ impl ServoView {
         //   wgpu backend defaults already set elsewhere.
         prefs.dom_webgpu_enabled = true;
 
+        // ── Default fonts: pick something that exists on every Windows 10/11
+        // install AND covers a wide Unicode range. Without this, Servo's
+        // font_default is empty and pages that rely on the UA stylesheet's
+        // generic "serif" / "sans-serif" / "monospace" fall back to the first
+        // available family — which on Windows is often a Latin-only font, so
+        // Cyrillic / Georgian / CJK / Arabic glyphs render as tofu.
+        // Segoe UI ships with Windows and DirectWrite chains it to Segoe UI
+        // Symbol / Yu Gothic UI / Malgun Gothic etc for missing glyphs, so
+        // setting it as the default sans-serif unlocks most non-Latin text.
+        #[cfg(windows)]
+        {
+            prefs.fonts_default = "Segoe UI".to_string();
+            prefs.fonts_sans_serif = "Segoe UI".to_string();
+            prefs.fonts_serif = "Times New Roman".to_string();
+            prefs.fonts_monospace = "Consolas".to_string();
+        }
+
         let servo = ServoBuilder::default()
             .event_loop_waker(waker)
             .preferences(prefs)
