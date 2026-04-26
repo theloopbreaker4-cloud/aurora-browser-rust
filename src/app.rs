@@ -810,7 +810,17 @@ pub fn run() {
                     }
                     UserEvent::MinimizeWindow     => { window.set_minimized(true); }
                     UserEvent::MaximizeWindow     => { window.set_maximized(!window.is_maximized()); }
-                    UserEvent::CloseWindow        => { *control_flow = ControlFlow::Exit; }
+                    UserEvent::CloseWindow        => {
+                        // Servo's ServoInner::drop() spins the event loop synchronously
+                        // which deadlocks when the embedder is also exiting. Hard-exit
+                        // when Servo is loaded; the window content has nothing
+                        // important to flush since we never made a session.
+                        #[cfg(feature = "servo-engine")]
+                        if servo_view.is_some() {
+                            crate::servo_view::ServoView::force_exit();
+                        }
+                        *control_flow = ControlFlow::Exit;
+                    }
                     UserEvent::DragWindow         => { let _ = window.drag_window(); }
                     UserEvent::SwitchEngine(engine) => {
                         // Save URL and engine to config BEFORE spawning new process
