@@ -46,83 +46,97 @@ use crate::events::UserEvent;
 mod child_window {
     use std::ptr;
     use std::sync::Once;
-    use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+    use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
+    use windows_sys::Win32::Graphics::Gdi::{ClientToScreen, ScreenToClient};
     use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        CreateWindowExW, DefWindowProcW, GetClassInfoExW, RegisterClassExW, SetCursor,
-        SetWindowPos, CS_HREDRAW, CS_VREDRAW, IDC_ARROW, LoadCursorW, SWP_NOACTIVATE, SWP_NOZORDER,
-        WM_SETCURSOR, WNDCLASSEXW, WS_CHILD, WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_EX_TRANSPARENT,
-        WS_VISIBLE,
+        CreateWindowExW, DefWindowProcW, GetClassInfoExW, GetParent, IDC_ARROW, LoadCursorW,
+        RegisterClassExW, SendMessageW, SetWindowPos, CS_HREDRAW, CS_VREDRAW, SWP_NOACTIVATE,
+        SWP_NOZORDER, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK,
+        WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEHWHEEL, WM_MOUSEMOVE, WM_MOUSEWHEEL,
+        WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SETCURSOR, WNDCLASSEXW, WS_CHILD,
+        WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_VISIBLE,
     };
 
-    // Custom window class so WM_SETCURSOR routing is under our control.
-    // The built-in STATIC class always reverts to its own arrow cursor in
-    // WM_SETCURSOR, which fights with our SetClassLongPtrW(GCLP_HCURSOR)
-    // override and produces flicker as the user moves the mouse over Servo
-    // content. Registering our own class with hCursor=NULL means Win32 will
-    // never auto-set a cursor on the child — our embedder is the sole owner
-    // (notify_cursor_changed -> set_child_window_cursor sets the class
-    // cursor to the CSS-derived one and that sticks).
+    // Custom window class with a WindowProc that REPOSTS mouse events to the
+    // tao parent. Background:
+    //   - The built-in STATIC class lets clicks reach the parent (Aurora UI
+    //     used it from v0.1 through v0.4.3) but it also reset the cursor on
+    //     every WM_SETCURSOR, fighting our class-cursor override.
+    //   - Replacing STATIC with a vanilla DefWindowProcW class (v0.4.4)
+    //     made the cursor stable but ate every mouse message — links and
+    //     buttons stopped working.
+    //   - Adding WS_EX_TRANSPARENT (v0.4.12) doesn't help on its own
+    //     because plain WS_EX_TRANSPARENT requires WS_EX_LAYERED to actually
+    //     pass through, and a layered window would break OpenGL rendering.
+    // The right answer: keep the custom class so we control WM_SETCURSOR,
+    // but explicitly forward WM_MOUSEMOVE / WM_*BUTTON* / WM_MOUSEWHEEL /
+    // WM_MOUSEHWHEEL to the parent HWND with screen->client coord conversion
+    // so tao's message loop sees them as if they happened on the parent.
     const CLASS_NAME: &[u16] = &[
-        b'A' as u16,
-        b'u' as u16,
-        b'r' as u16,
-        b'o' as u16,
-        b'r' as u16,
-        b'a' as u16,
-        b'S' as u16,
-        b'e' as u16,
-        b'r' as u16,
-        b'v' as u16,
-        b'o' as u16,
-        b'S' as u16,
-        b'u' as u16,
-        b'r' as u16,
-        b'f' as u16,
-        b'a' as u16,
-        b'c' as u16,
-        b'e' as u16,
+        b'A' as u16, b'u' as u16, b'r' as u16, b'o' as u16, b'r' as u16, b'a' as u16,
+        b'S' as u16, b'e' as u16, b'r' as u16, b'v' as u16, b'o' as u16,
+        b'S' as u16, b'u' as u16, b'r' as u16, b'f' as u16, b'a' as u16, b'c' as u16, b'e' as u16,
         0u16,
     ];
 
     static REGISTERED: Once = Once::new();
 
-    /// WindowProc forwards everything to DefWindowProcW. The interesting bit
-    /// is that we register the class with hCursor=NULL so DefWindowProcW does
-    /// NOT call SetCursor() on its own when WM_SETCURSOR arrives — it returns
-    /// FALSE which lets the parent window proc decide, and the per-class
-    /// cursor we install via SetClassLongPtrW is what actually gets shown.
+    /// Convert lParam (child-relative client coords) to a parent-relative
+    /// lParam by going through screen coordinates. Returns the rebuilt LPARAM
+    /// (low word = x, high word = y).
+    unsafe fn translate_lparam(child: HWND, parent: HWND, lparam: LPARAM) -> LPARAM {
+        // Win32 packs x/y as i16 each in the low/high word of lParam.
+        let x = (lparam & 0xFFFF) as i16 as i32;
+        let y = ((lparam >> 16) & 0xFFFF) as i16 as i32;
+        let mut pt = POINT { x, y };
+        ClientToScreen(child, &mut pt);
+        ScreenToClient(parent, &mut pt);
+        ((pt.x as i32 & 0xFFFF) | ((pt.y as i32 & 0xFFFF) << 16)) as LPARAM
+    }
+
     unsafe extern "system" fn wnd_proc(
         hwnd: HWND,
         msg: u32,
         wparam: WPARAM,
         lparam: LPARAM,
     ) -> LRESULT {
-        if msg == WM_SETCURSOR {
-            // Per MSDN: returning TRUE halts further processing. We rely on
-            // the class cursor (set by set_child_window_cursor) so SetCursor
-            // was already called when the cursor changed; just halt the chain.
-            return 1;
+        match msg {
+            // Cursor: short-circuit so DefWindowProcW doesn't reset it. The
+            // class cursor (set via SetClassLongPtrW from set_child_window_cursor)
+            // was already painted; returning TRUE halts further processing.
+            WM_SETCURSOR => 1,
+            // Mouse events: repost to the parent with translated coords so
+            // tao's WindowProc fires CursorMoved / MouseInput as expected.
+            WM_MOUSEMOVE
+            | WM_LBUTTONDOWN | WM_LBUTTONUP | WM_LBUTTONDBLCLK
+            | WM_RBUTTONDOWN | WM_RBUTTONUP | WM_RBUTTONDBLCLK
+            | WM_MBUTTONDOWN | WM_MBUTTONUP | WM_MBUTTONDBLCLK
+            | WM_MOUSEWHEEL | WM_MOUSEHWHEEL => {
+                let parent = GetParent(hwnd);
+                if !parent.is_null() {
+                    let new_lp = translate_lparam(hwnd, parent, lparam);
+                    SendMessageW(parent, msg, wparam, new_lp);
+                }
+                0
+            }
+            _ => DefWindowProcW(hwnd, msg, wparam, lparam),
         }
-        DefWindowProcW(hwnd, msg, wparam, lparam)
     }
 
     fn register_class() {
         REGISTERED.call_once(|| unsafe {
             let hinstance = GetModuleHandleW(ptr::null());
-            // If somehow already registered (hot reload, second window), skip.
             let mut existing: WNDCLASSEXW = std::mem::zeroed();
             existing.cbSize = std::mem::size_of::<WNDCLASSEXW>() as u32;
             if GetClassInfoExW(hinstance, CLASS_NAME.as_ptr(), &mut existing) != 0 {
                 return;
             }
-
             let mut wc: WNDCLASSEXW = std::mem::zeroed();
             wc.cbSize = std::mem::size_of::<WNDCLASSEXW>() as u32;
             wc.style = CS_HREDRAW | CS_VREDRAW;
             wc.lpfnWndProc = Some(wnd_proc);
             wc.hInstance = hinstance;
-            // Default cursor is an arrow until the embedder overrides it.
             wc.hCursor = LoadCursorW(ptr::null_mut(), IDC_ARROW);
             wc.lpszClassName = CLASS_NAME.as_ptr();
             RegisterClassExW(&wc);
@@ -131,22 +145,13 @@ mod child_window {
 
     /// Create a child HWND inside `parent_hwnd` at position (x, y) with given size.
     /// Returns the child HWND as isize (0 on failure).
-    ///
-    /// WS_EX_TRANSPARENT is critical: it tells Win32 hit-testing to skip this
-    /// window entirely. Without it, mouse events landing on the Servo render
-    /// surface get delivered to the child HWND (whose WindowProc is just
-    /// DefWindowProcW), so tao on the parent never sees CursorMoved /
-    /// MouseInput and Servo never receives the on_mouse_* forwards. Result:
-    /// links don't click, no hover cursor, settings page inert. With this
-    /// flag, parent tao gets all events and our app.rs handler forwards them
-    /// to ServoView::on_mouse_*.
     pub fn create(parent_hwnd: isize, x: i32, y: i32, width: i32, height: i32) -> isize {
         register_class();
         let hinstance = unsafe { GetModuleHandleW(ptr::null()) };
         let style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
         unsafe {
             CreateWindowExW(
-                WS_EX_TRANSPARENT,
+                0,
                 CLASS_NAME.as_ptr(),
                 ptr::null(),
                 style,
@@ -177,13 +182,6 @@ mod child_window {
         }
     }
 
-    // Silence unused warning if SetCursor isn't otherwise needed (some flag combos).
-    #[allow(dead_code)]
-    fn _force_link(c: *const u16) {
-        unsafe {
-            SetCursor(LoadCursorW(ptr::null_mut(), c));
-        }
-    }
 }
 
 // ── Handles wrapper ───────────────────────────────────────────────────────
