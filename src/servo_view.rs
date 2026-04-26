@@ -45,28 +45,93 @@ use crate::events::UserEvent;
 #[cfg(windows)]
 mod child_window {
     use std::ptr;
-    use windows_sys::Win32::Foundation::HWND;
+    use std::sync::Once;
+    use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
     use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        CreateWindowExW, SetWindowPos, SWP_NOACTIVATE, SWP_NOZORDER, WS_CHILD, WS_CLIPCHILDREN,
-        WS_CLIPSIBLINGS, WS_VISIBLE,
+        CreateWindowExW, DefWindowProcW, GetClassInfoExW, RegisterClassExW, SetCursor,
+        SetWindowPos, CS_HREDRAW, CS_VREDRAW, IDC_ARROW, LoadCursorW, SWP_NOACTIVATE, SWP_NOZORDER,
+        WM_SETCURSOR, WNDCLASSEXW, WS_CHILD, WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_VISIBLE,
     };
 
-    // Use the built-in "STATIC" window class — no registration needed, supports child windows.
-    // We override the background to black (null brush = transparent/inherit).
+    // Custom window class so WM_SETCURSOR routing is under our control.
+    // The built-in STATIC class always reverts to its own arrow cursor in
+    // WM_SETCURSOR, which fights with our SetClassLongPtrW(GCLP_HCURSOR)
+    // override and produces flicker as the user moves the mouse over Servo
+    // content. Registering our own class with hCursor=NULL means Win32 will
+    // never auto-set a cursor on the child — our embedder is the sole owner
+    // (notify_cursor_changed -> set_child_window_cursor sets the class
+    // cursor to the CSS-derived one and that sticks).
     const CLASS_NAME: &[u16] = &[
-        b'S' as u16,
-        b'T' as u16,
         b'A' as u16,
-        b'T' as u16,
-        b'I' as u16,
-        b'C' as u16,
+        b'u' as u16,
+        b'r' as u16,
+        b'o' as u16,
+        b'r' as u16,
+        b'a' as u16,
+        b'S' as u16,
+        b'e' as u16,
+        b'r' as u16,
+        b'v' as u16,
+        b'o' as u16,
+        b'S' as u16,
+        b'u' as u16,
+        b'r' as u16,
+        b'f' as u16,
+        b'a' as u16,
+        b'c' as u16,
+        b'e' as u16,
         0u16,
     ];
+
+    static REGISTERED: Once = Once::new();
+
+    /// WindowProc forwards everything to DefWindowProcW. The interesting bit
+    /// is that we register the class with hCursor=NULL so DefWindowProcW does
+    /// NOT call SetCursor() on its own when WM_SETCURSOR arrives — it returns
+    /// FALSE which lets the parent window proc decide, and the per-class
+    /// cursor we install via SetClassLongPtrW is what actually gets shown.
+    unsafe extern "system" fn wnd_proc(
+        hwnd: HWND,
+        msg: u32,
+        wparam: WPARAM,
+        lparam: LPARAM,
+    ) -> LRESULT {
+        if msg == WM_SETCURSOR {
+            // Per MSDN: returning TRUE halts further processing. We rely on
+            // the class cursor (set by set_child_window_cursor) so SetCursor
+            // was already called when the cursor changed; just halt the chain.
+            return 1;
+        }
+        DefWindowProcW(hwnd, msg, wparam, lparam)
+    }
+
+    fn register_class() {
+        REGISTERED.call_once(|| unsafe {
+            let hinstance = GetModuleHandleW(ptr::null());
+            // If somehow already registered (hot reload, second window), skip.
+            let mut existing: WNDCLASSEXW = std::mem::zeroed();
+            existing.cbSize = std::mem::size_of::<WNDCLASSEXW>() as u32;
+            if GetClassInfoExW(hinstance, CLASS_NAME.as_ptr(), &mut existing) != 0 {
+                return;
+            }
+
+            let mut wc: WNDCLASSEXW = std::mem::zeroed();
+            wc.cbSize = std::mem::size_of::<WNDCLASSEXW>() as u32;
+            wc.style = CS_HREDRAW | CS_VREDRAW;
+            wc.lpfnWndProc = Some(wnd_proc);
+            wc.hInstance = hinstance;
+            // Default cursor is an arrow until the embedder overrides it.
+            wc.hCursor = LoadCursorW(ptr::null_mut(), IDC_ARROW);
+            wc.lpszClassName = CLASS_NAME.as_ptr();
+            RegisterClassExW(&wc);
+        });
+    }
 
     /// Create a child HWND inside `parent_hwnd` at position (x, y) with given size.
     /// Returns the child HWND as isize (0 on failure).
     pub fn create(parent_hwnd: isize, x: i32, y: i32, width: i32, height: i32) -> isize {
+        register_class();
         let hinstance = unsafe { GetModuleHandleW(ptr::null()) };
         let style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
         unsafe {
@@ -99,6 +164,14 @@ mod child_window {
                 height,
                 SWP_NOZORDER | SWP_NOACTIVATE,
             );
+        }
+    }
+
+    // Silence unused warning if SetCursor isn't otherwise needed (some flag combos).
+    #[allow(dead_code)]
+    fn _force_link(c: *const u16) {
+        unsafe {
+            SetCursor(LoadCursorW(ptr::null_mut(), c));
         }
     }
 }
