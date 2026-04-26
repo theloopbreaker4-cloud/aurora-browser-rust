@@ -873,6 +873,25 @@ impl ServoView {
         //   together with a verified Win32 wgpu adapter init.
         // prefs.dom_webgpu_enabled = true;
 
+        // ── Third pref wave (v0.4.11): layout / performance APIs that are
+        // implemented in Servo but default-off. All single-line flips.
+        // - layout_container_queries: @container CSS, modern responsive design
+        prefs.layout_container_queries_enabled = true;
+        // - layout_columns: CSS multi-column layout (column-count, column-width)
+        prefs.layout_columns_enabled = true;
+        // - layout_writing_mode: vertical-rl, RTL, sideways text — non-Latin
+        //   sites need this
+        prefs.layout_writing_mode_enabled = true;
+        // - layout_variable_fonts: variable font axes (wght, wdth, slnt) —
+        //   modern type design
+        prefs.layout_variable_fonts_enabled = true;
+        // - viewport_meta: <meta name="viewport"> support; mobile-style sites
+        //   rely on this for responsive scaling
+        prefs.viewport_meta_enabled = true;
+        // - largest_contentful_paint: PerformanceObserver entry, used by
+        //   analytics/RUM tools to grade page speed
+        prefs.largest_contentful_paint_enabled = true;
+
         // ── Default fonts: pick something that exists on every Windows 10/11
         // install AND covers a wide Unicode range. Without this, Servo's
         // font_default is empty and pages that rely on the UA stylesheet's
