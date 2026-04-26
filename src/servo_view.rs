@@ -835,6 +835,43 @@ impl ServoView {
         prefs.dom_webgl2_enabled = true;
         prefs.dom_navigator_protocol_handlers_enabled = true;
 
+        // ── Second wave (v0.4.5): more pref-gated APIs that are implemented
+        // in Servo but default-off. Each one matters for some popular site
+        // category, listed in comments.
+        // - adoptedStyleSheets: Lit / design-system libs build CSS once and
+        //   share across shadow roots. Without this they hit a slow path or
+        //   blow up.
+        prefs.dom_adoptedstylesheet_enabled = true;
+        // - canvas.captureStream(): live MediaStream from a <canvas>, used by
+        //   recording / streaming demos.
+        prefs.dom_canvas_capture_enabled = true;
+        // - composition events: required for IME (CJK input) round-tripping.
+        prefs.dom_composition_event_enabled = true;
+        // - CookieStore: modern async cookie API, replaces document.cookie
+        //   for SPA frameworks.
+        prefs.dom_cookiestore_enabled = true;
+        // - Credential Management: navigator.credentials, password autofill
+        //   discovery, federated sign-in.
+        prefs.dom_credential_management_enabled = true;
+        // - document.execCommand: legacy but still everywhere (rich-text
+        //   editors, copy buttons that pre-date navigator.clipboard).
+        prefs.dom_exec_command_enabled = true;
+        // - CSS Font Loading API (FontFace, document.fonts): fontkit /
+        //   variable-font sites need this.
+        prefs.dom_fontface_enabled = true;
+        // - Permissions API: navigator.permissions.query() for camera /
+        //   notification / geolocation status reads.
+        prefs.dom_permissions_enabled = true;
+        // - VisualViewport: window.visualViewport, used by virtual-keyboard
+        //   aware mobile-style layouts.
+        prefs.dom_visual_viewport_enabled = true;
+        // - WebVTT: <track kind="subtitles"> on <video>.
+        prefs.dom_webvtt_enabled = true;
+        // - WebGPU: modern graphics API; without this, WebGPU demos and
+        //   anything using @webgpu/types hits "navigator.gpu is undefined".
+        //   wgpu backend defaults already set elsewhere.
+        prefs.dom_webgpu_enabled = true;
+
         let servo = ServoBuilder::default()
             .event_loop_waker(waker)
             .preferences(prefs)
