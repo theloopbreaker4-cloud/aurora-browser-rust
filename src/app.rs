@@ -296,22 +296,31 @@ pub fn run() {
                 if let Some(ref sv) = servo_view {
                     sv.on_mouse_move(position.x, position.y);
                 }
-                // Edge resize cursor icons
+                // Edge resize cursor icons. Only set when actually on a border —
+                // otherwise we'd overwrite the cursor that Servo's
+                // notify_cursor_changed delegate just installed (CSS cursor:
+                // pointer on links, text on inputs, etc).
                 let size = window.inner_size();
                 let (w, h) = (size.width as f64, size.height as f64);
                 let (x, y) = (position.x, position.y);
-                let cursor = match (x < RESIZE_BORDER, x > w - RESIZE_BORDER, y < RESIZE_BORDER, y > h - RESIZE_BORDER) {
-                    (true,  false, true,  false) => CursorIcon::NwResize,
-                    (false, true,  true,  false) => CursorIcon::NeResize,
-                    (true,  false, false, true)  => CursorIcon::SwResize,
-                    (false, true,  false, true)  => CursorIcon::SeResize,
-                    (true,  false, false, false) => CursorIcon::WResize,
-                    (false, true,  false, false) => CursorIcon::EResize,
-                    (false, false, true,  false) => CursorIcon::NResize,
-                    (false, false, false, true)  => CursorIcon::SResize,
-                    _ => CursorIcon::Default,
+                let on_left   = x < RESIZE_BORDER;
+                let on_right  = x > w - RESIZE_BORDER;
+                let on_top    = y < RESIZE_BORDER;
+                let on_bottom = y > h - RESIZE_BORDER;
+                let edge_cursor = match (on_left, on_right, on_top, on_bottom) {
+                    (true,  false, true,  false) => Some(CursorIcon::NwResize),
+                    (false, true,  true,  false) => Some(CursorIcon::NeResize),
+                    (true,  false, false, true)  => Some(CursorIcon::SwResize),
+                    (false, true,  false, true)  => Some(CursorIcon::SeResize),
+                    (true,  false, false, false) => Some(CursorIcon::WResize),
+                    (false, true,  false, false) => Some(CursorIcon::EResize),
+                    (false, false, true,  false) => Some(CursorIcon::NResize),
+                    (false, false, false, true)  => Some(CursorIcon::SResize),
+                    _ => None,
                 };
-                window.set_cursor_icon(cursor);
+                if let Some(c) = edge_cursor {
+                    window.set_cursor_icon(c);
+                }
             }
 
             Event::WindowEvent {
