@@ -50,12 +50,12 @@ mod child_window {
     use windows_sys::Win32::Graphics::Gdi::{ClientToScreen, ScreenToClient};
     use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        CreateWindowExW, DefWindowProcW, GetClassInfoExW, GetParent, IDC_ARROW, LoadCursorW,
-        RegisterClassExW, SendMessageW, SetWindowPos, CS_HREDRAW, CS_VREDRAW, SWP_NOACTIVATE,
-        SWP_NOZORDER, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK,
-        WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEHWHEEL, WM_MOUSEMOVE, WM_MOUSEWHEEL,
-        WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SETCURSOR, WNDCLASSEXW, WS_CHILD,
-        WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_VISIBLE,
+        CreateWindowExW, DefWindowProcW, GetClassInfoExW, GetClassLongPtrW, GetParent, IDC_ARROW,
+        LoadCursorW, RegisterClassExW, SendMessageW, SetCursor, SetWindowPos, CS_HREDRAW,
+        CS_VREDRAW, GCLP_HCURSOR, SWP_NOACTIVATE, SWP_NOZORDER, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN,
+        WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEHWHEEL,
+        WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SETCURSOR,
+        WNDCLASSEXW, WS_CHILD, WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_VISIBLE,
     };
 
     // Custom window class with a WindowProc that REPOSTS mouse events to the
@@ -102,10 +102,20 @@ mod child_window {
         lparam: LPARAM,
     ) -> LRESULT {
         match msg {
-            // Cursor: short-circuit so DefWindowProcW doesn't reset it. The
-            // class cursor (set via SetClassLongPtrW from set_child_window_cursor)
-            // was already painted; returning TRUE halts further processing.
-            WM_SETCURSOR => 1,
+            // Cursor: pull the current class cursor (which set_child_window_cursor
+            // updates via SetClassLongPtrW(GCLP_HCURSOR) every time Servo's
+            // notify_cursor_changed delegate fires) and apply it explicitly,
+            // then return TRUE so Win32 doesn't override it. Returning 1
+            // without the SetCursor call (the v0.4.13 path) left the cursor
+            // stuck on whatever was there at startup, defeating the whole
+            // point of the class-cursor override.
+            WM_SETCURSOR => {
+                let h = GetClassLongPtrW(hwnd, GCLP_HCURSOR);
+                if h != 0 {
+                    SetCursor(h as _);
+                }
+                1
+            },
             // Mouse events: repost to the parent with translated coords so
             // tao's WindowProc fires CursorMoved / MouseInput as expected.
             WM_MOUSEMOVE
