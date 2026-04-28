@@ -80,6 +80,8 @@ pub fn build_toolbar_webview(
                 let _ = proxy_toolbar.send_event(UserEvent::MaximizeWindow);
             } else if msg == "close_window" {
                 let _ = proxy_toolbar.send_event(UserEvent::CloseWindow);
+            } else if let Some(url) = msg.strip_prefix("tearoff_tab:") {
+                spawn_new_window(url);
             } else if msg == "drag_window" {
                 let _ = proxy_toolbar.send_event(UserEvent::DragWindow);
             } else if let Some(engine) = msg.strip_prefix("switch_engine:") {
@@ -229,4 +231,18 @@ pub fn content_bounds(width: u32, height: u32, toolbar_height: u32) -> Rect {
 
 pub fn portal_html(ipc_token: &str) -> String {
     portal::get_portal_html(ipc_token)
+}
+
+/// Spawn a new Aurora window (separate process) carrying the given URL.
+/// Used by tab tear-off: drag a tab out of the strip → it pops into a new window.
+fn spawn_new_window(url: &str) {
+    let exe = match std::env::current_exe() {
+        Ok(p) => p,
+        Err(_) => return,
+    };
+    let engine = config::get_engine();
+    let _ = std::process::Command::new(exe)
+        .arg(format!("--engine={}", engine))
+        .arg(url)
+        .spawn();
 }

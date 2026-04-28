@@ -49,6 +49,7 @@ mod child_window {
     use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
     use windows_sys::Win32::Graphics::Gdi::{ClientToScreen, ScreenToClient};
     use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::SetFocus;
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         CreateWindowExW, DefWindowProcW, GetClassInfoExW, GetClassLongPtrW, GetParent, IDC_ARROW,
         LoadCursorW, RegisterClassExW, SendMessageW, SetCursor, SetWindowPos, CS_HREDRAW,
@@ -118,6 +119,11 @@ mod child_window {
             },
             // Mouse events: repost to the parent with translated coords so
             // tao's WindowProc fires CursorMoved / MouseInput as expected.
+            // ALSO: on mouse-down, push keyboard focus back to the parent so
+            // Win32 delivers WM_KEYDOWN/WM_CHAR straight to tao's parent
+            // WindowProc instead of to this child. (SendMessageW for keyboard
+            // messages does NOT work — it bypasses the thread message queue
+            // that tao polls via GetMessage, so KeyboardInput never fires.)
             WM_MOUSEMOVE
             | WM_LBUTTONDOWN | WM_LBUTTONUP | WM_LBUTTONDBLCLK
             | WM_RBUTTONDOWN | WM_RBUTTONUP | WM_RBUTTONDBLCLK
@@ -127,6 +133,13 @@ mod child_window {
                 if !parent.is_null() {
                     let new_lp = translate_lparam(hwnd, parent, lparam);
                     SendMessageW(parent, msg, wparam, new_lp);
+                    if matches!(msg,
+                        WM_LBUTTONDOWN | WM_LBUTTONDBLCLK
+                        | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK
+                        | WM_MBUTTONDOWN | WM_MBUTTONDBLCLK
+                    ) {
+                        SetFocus(parent);
+                    }
                 }
                 0
             }
@@ -237,6 +250,7 @@ struct AuroraDelegate {
     /// Servo child HWND (cached for client_to_screen conversion).
     child_hwnd: isize,
     /// Toolbar physical-pixel offset so we map content coords to window coords.
+    #[allow(dead_code)]
     toolbar_phys: u32,
 }
 
@@ -992,44 +1006,39 @@ impl ServoView {
     }
 
     /// Order child HWNDs: Servo below toolbar, toolbar on top.
-    /// Strategy: put Servo at HWND_TOP first, then put all other child windows
-    /// (wry toolbar) above Servo so toolbar remains visible.
+    /// Strategy: put Servo at HWND_BOTTOM first, then put all other child windows
+    /// (wry toolbar) above Servo so toolbar remains visible AND receives clicks.
+    /// Called every paint because Servo's swap_buffers occasionally re-asserts
+    /// its HWND to the top via the GL driver — without this the toolbar buttons
+    /// stop receiving clicks on whichever frame Servo wins the z-fight.
     fn bring_to_front(&self) {
         #[cfg(windows)]
         unsafe {
             use windows_sys::Win32::Foundation::HWND;
             use windows_sys::Win32::UI::WindowsAndMessaging::{
                 GetWindow, SetWindowPos,
-                SWP_NOMOVE, SWP_NOSIZE, SWP_NOACTIVATE, GW_CHILD, GW_HWNDNEXT,
+                SWP_NOMOVE, SWP_NOSIZE, SWP_NOACTIVATE, SWP_NOREDRAW,
+                GW_CHILD, GW_HWNDNEXT,
             };
 
-            // First put Servo at bottom of Z-order (HWND_BOTTOM = 1).
-            const HWND_BOTTOM: HWND = 1isize as _;
-            SetWindowPos(
-                self.child_hwnd as HWND,
-                HWND_BOTTOM,
-                0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
-            );
+            // SWP_NOREDRAW prevents the toolbar HWND from being marked dirty by
+            // the z-shuffle itself — without it the per-tab × buttons flicker
+            // because tao re-paints the toolbar's non-client area on every shuffle.
+            let flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOREDRAW;
 
-            // Then raise all wry child windows (not our Servo HWND) to top.
-            // Walk sibling HWNDs and push non-Servo ones to HWND_TOP.
+            const HWND_BOTTOM: HWND = 1isize as _;
+            SetWindowPos(self.child_hwnd as HWND, HWND_BOTTOM, 0, 0, 0, 0, flags);
+
             const HWND_TOP: HWND = 0isize as _;
             let mut sibling = GetWindow(self.parent_hwnd as HWND, GW_CHILD);
             let mut count = 0;
             while sibling != 0 as _ {
                 count += 1;
                 if sibling as isize != self.child_hwnd {
-                    SetWindowPos(
-                        sibling,
-                        HWND_TOP,
-                        0, 0, 0, 0,
-                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
-                    );
+                    SetWindowPos(sibling, HWND_TOP, 0, 0, 0, 0, flags);
                 }
                 sibling = GetWindow(sibling, GW_HWNDNEXT);
             }
-            // Log only on first few calls
             static LOGGED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
             if LOGGED.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 3 {
                 slog(&format!("bring_to_front: child count={count}, servo_hwnd={}", self.child_hwnd));
@@ -1157,6 +1166,13 @@ impl ServoView {
             } else {
                 MouseButtonAction::Up
             };
+            // Re-focus the webview on every click so Servo treats subsequent
+            // keystrokes as targeting the focused element (e.g. <input>s).
+            // Without this, focus migrates to the child HWND but Servo's
+            // internal "is the webview focused?" flag stays false.
+            if pressed {
+                self.webview.focus();
+            }
             self.webview
                 .notify_input_event(InputEvent::MouseButton(MouseButtonEvent::new(
                     action, btn, point,

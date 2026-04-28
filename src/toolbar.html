@@ -94,8 +94,11 @@ body {
     max-width: 200px;
     flex: 1 1 160px;
     overflow: hidden;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, transform 0.12s;
 }
+.tab.dragging { opacity: 0.45; }
+.tab.drop-before { box-shadow: inset 2px 0 0 0 #3ca0a0; }
+.tab.drop-after  { box-shadow: inset -2px 0 0 0 #3ca0a0; }
 
 .tab.active {
     background: #1a2e3e;
@@ -609,7 +612,15 @@ function newTab() {
 }
 
 function closeTab(i) {
-    if (tabs.length <= 1) return;
+    if (tabs.length <= 1) {
+        // Last tab: reset it to a fresh new-tab page instead of doing nothing.
+        tabs[0] = { title: 'New Tab', url: 'aurora://newtab', isPortal: true };
+        activeTab = 0;
+        document.getElementById('addressBar').value = '';
+        ipcSend('navigate:aurora://newtab');
+        updateTabs();
+        return;
+    }
     tabs.splice(i, 1);
     if (activeTab >= tabs.length) activeTab = tabs.length - 1;
     switchTab(activeTab);
@@ -642,10 +653,87 @@ function updateTabs() {
     tabs.forEach((tab, i) => {
         const el = document.createElement('div');
         el.className = 'tab' + (i === activeTab ? ' active' : '');
+        el.draggable = true;
+        el.dataset.idx = i;
         el.innerHTML = `<div class="tab-favicon">${getFaviconHtml(tab.url)}</div><span class="tab-title">${tab.title}</span><span class="tab-close"><svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></span>`;
         el.querySelector('.tab-title').onclick = () => switchTab(i);
         el.querySelector('.tab-close').onclick = (e) => { e.stopPropagation(); closeTab(i); };
+        attachTabDrag(el, i);
         container.appendChild(el);
+    });
+}
+
+// ───── Tab drag: reorder inside tabstrip + tear-off to new window ─────
+let _dragSrc = -1;
+let _dragLastClientY = 0;
+
+function attachTabDrag(el, i) {
+    el.addEventListener('dragstart', (e) => {
+        _dragSrc = i;
+        el.classList.add('dragging');
+        try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); } catch {}
+    });
+    el.addEventListener('dragend', (e) => {
+        el.classList.remove('dragging');
+        document.querySelectorAll('.tab.drop-before,.tab.drop-after').forEach(t => t.classList.remove('drop-before','drop-after'));
+        // Tear-off detection: only fire if the pointer ended OUTSIDE the entire
+        // titlebar AND outside the window viewport — otherwise a drag that
+        // dipped below the tabstrip and returned would still pop a new window.
+        const titlebar = document.getElementById('titlebar');
+        const tr = titlebar ? titlebar.getBoundingClientRect() : { top:0, bottom:42, left:0, right:window.innerWidth };
+        const insideTitlebar = e.clientX >= tr.left && e.clientX <= tr.right
+                            && e.clientY >= tr.top  && e.clientY <= tr.bottom;
+        const insideWindow = e.clientX >= 0 && e.clientX <= window.innerWidth
+                          && e.clientY >= 0 && e.clientY <= window.innerHeight;
+        // Drop coords of (0,0) mean the OS cancelled the drag (e.g. Esc) — don't tear.
+        const cancelled = e.clientX === 0 && e.clientY === 0;
+        const tearOff = !cancelled && !insideTitlebar && !insideWindow;
+        if (tearOff && _dragSrc >= 0 && tabs.length > 1) {
+            const torn = tabs[_dragSrc];
+            // Tabs may track an internal http loopback URL for aurora:// pages —
+            // collapse those back to the canonical aurora:// scheme for the new window.
+            let url = torn.url || 'aurora://newtab';
+            if (torn.isPortal || /^https?:\/\/127\.0\.0\.1:\d+\/(newtab|portal|settings|history|bookmarks|downloads|about|extensions|incognito|tab_groups|benchmarks|feedback|test)$/.test(url)) {
+                url = 'aurora://newtab';
+            }
+            ipcSend('tearoff_tab:' + url);
+            tabs.splice(_dragSrc, 1);
+            if (activeTab >= tabs.length) activeTab = tabs.length - 1;
+            else if (activeTab > _dragSrc) activeTab -= 1;
+            switchTab(activeTab);
+        }
+        _dragSrc = -1;
+    });
+    el.addEventListener('dragover', (e) => {
+        if (_dragSrc < 0 || _dragSrc === i) return;
+        e.preventDefault();
+        try { e.dataTransfer.dropEffect = 'move'; } catch {}
+        const r = el.getBoundingClientRect();
+        const before = (e.clientX - r.left) < r.width / 2;
+        el.classList.toggle('drop-before', before);
+        el.classList.toggle('drop-after', !before);
+    });
+    el.addEventListener('dragleave', () => {
+        el.classList.remove('drop-before','drop-after');
+    });
+    el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        el.classList.remove('drop-before','drop-after');
+        if (_dragSrc < 0 || _dragSrc === i) return;
+        const r = el.getBoundingClientRect();
+        const before = (e.clientX - r.left) < r.width / 2;
+        let target = before ? i : i + 1;
+        const moved = tabs.splice(_dragSrc, 1)[0];
+        if (_dragSrc < target) target -= 1;
+        tabs.splice(target, 0, moved);
+        // Track active tab through the move.
+        if (activeTab === _dragSrc) activeTab = target;
+        else {
+            if (_dragSrc < activeTab) activeTab -= 1;
+            if (target <= activeTab) activeTab += 1;
+        }
+        _dragSrc = -1;
+        updateTabs();
     });
 }
 

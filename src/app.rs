@@ -18,6 +18,24 @@ use tao::window::{CursorIcon, Fullscreen, WindowBuilder};
 // Total height of the toolbar area in logical pixels (tab bar + nav bar + bookmark bar)
 const TOOLBAR_HEIGHT: u32 = 122;
 
+/// Rewrite the http loopback URL Servo sees back to its canonical aurora://
+/// form so the address bar always shows aurora://* for internal pages.
+fn display_url_for(url: &str, origin: Option<&str>) -> String {
+    if let Some(o) = origin {
+        if let Some(rest) = url.strip_prefix(o) {
+            let path = rest.trim_start_matches('/');
+            // Treat empty path or "newtab" / "portal" as the new-tab page.
+            let canonical = if path.is_empty() || path == "newtab" || path == "portal" {
+                "newtab"
+            } else {
+                path
+            };
+            return format!("aurora://{}", canonical);
+        }
+    }
+    url.to_string()
+}
+
 fn flog(msg: &str) {
     use std::io::Write;
     let path = crate::config::exe_dir().join("servo_log.txt");
@@ -217,6 +235,11 @@ pub fn run() {
     } else {
         startup_url.clone()
     };
+    // Latest known modifier state (Shift/Ctrl/Alt/Meta) — updated by
+    // ModifiersChanged events and forwarded with every Servo key event so
+    // shifted/control-modified input behaves correctly inside <input>s.
+    #[cfg(feature = "servo-engine")]
+    let mut current_modifiers = tao::keyboard::ModifiersState::empty();
 
     event_loop.run(move |event, _, control_flow| {
         // Default: sleep until next event. Servo wakes us via TaoWaker when it needs work.
@@ -248,7 +271,10 @@ pub fn run() {
                 if let Some(url) = sv.current_url() {
                     if url != current_url {
                         current_url = url.clone();
-                        let escaped = url.replace('\\', "\\\\").replace('\'', "\\'");
+                        // Hide loopback URLs from the address bar — they're an
+                        // implementation detail of how aurora:// pages are served.
+                        let display = display_url_for(&url, aurora_origin.as_deref());
+                        let escaped = display.replace('\\', "\\\\").replace('\'', "\\'");
                         let _ = toolbar_webview.evaluate_script(&format!("onUrlChanged('{}')", escaped));
                     }
                 }
@@ -366,18 +392,40 @@ pub fn run() {
             }
 
             Event::WindowEvent {
-                event: WindowEvent::KeyboardInput { event: _key_event, .. }, ..
+                event: WindowEvent::ModifiersChanged(_mods), ..
             } => {
                 #[cfg(feature = "servo-engine")]
+                { current_modifiers = _mods; }
+            }
+
+            Event::WindowEvent {
+                event: WindowEvent::KeyboardInput { event: _key_event, .. }, ..
+            } => {
+                // DIAGNOSTIC: log every keyboard event reaching the parent
+                // BEFORE any feature gating or Servo translation. If this never
+                // logs after clicking inside Servo and typing, the problem is
+                // Win32 child→parent message forwarding — not the Servo bridge.
+                flog(&format!(
+                    "KeyboardInput: state={:?} logical={:?} physical={:?} repeat={} servo_active={}",
+                    _key_event.state,
+                    _key_event.logical_key,
+                    _key_event.physical_key,
+                    _key_event.repeat,
+                    {
+                        #[cfg(feature = "servo-engine")] { servo_view.is_some() }
+                        #[cfg(not(feature = "servo-engine"))] { false }
+                    },
+                ));
+                #[cfg(feature = "servo-engine")]
                 if let Some(ref sv) = servo_view {
-                    use tao::keyboard::Key as TaoKey;
+                    use tao::keyboard::{Key as TaoKey, KeyCode as TaoCode};
                     use keyboard_types::{Key, KeyState, KeyboardEvent as KbEvent, Code, Location, Modifiers};
                     let state = match _key_event.state {
                         ElementState::Pressed  => KeyState::Down,
                         ElementState::Released => KeyState::Up,
                         _ => KeyState::Down,
                     };
-                    // Map tao Key to keyboard_types Key (best-effort)
+                    // Map tao Key (logical, layout-aware) to keyboard_types Key.
                     let key = match &_key_event.logical_key {
                         TaoKey::Character(c) => Key::Character(c.to_string()),
                         TaoKey::Enter => Key::Named(keyboard_types::NamedKey::Enter),
@@ -394,17 +442,76 @@ pub fn run() {
                         TaoKey::PageUp   => Key::Named(keyboard_types::NamedKey::PageUp),
                         TaoKey::PageDown => Key::Named(keyboard_types::NamedKey::PageDown),
                         TaoKey::Delete   => Key::Named(keyboard_types::NamedKey::Delete),
+                        TaoKey::Shift    => Key::Named(keyboard_types::NamedKey::Shift),
+                        TaoKey::Control  => Key::Named(keyboard_types::NamedKey::Control),
+                        TaoKey::Alt      => Key::Named(keyboard_types::NamedKey::Alt),
+                        TaoKey::Super    => Key::Named(keyboard_types::NamedKey::Meta),
+                        TaoKey::CapsLock => Key::Named(keyboard_types::NamedKey::CapsLock),
                         _ => Key::Named(keyboard_types::NamedKey::Unidentified),
                     };
+                    // Map tao physical KeyCode to keyboard_types Code. Servo's
+                    // input handling reads `code` (not just `key`) to decide
+                    // whether a keypress should produce a character in <input>.
+                    let code = match _key_event.physical_key {
+                        TaoCode::KeyA => Code::KeyA, TaoCode::KeyB => Code::KeyB,
+                        TaoCode::KeyC => Code::KeyC, TaoCode::KeyD => Code::KeyD,
+                        TaoCode::KeyE => Code::KeyE, TaoCode::KeyF => Code::KeyF,
+                        TaoCode::KeyG => Code::KeyG, TaoCode::KeyH => Code::KeyH,
+                        TaoCode::KeyI => Code::KeyI, TaoCode::KeyJ => Code::KeyJ,
+                        TaoCode::KeyK => Code::KeyK, TaoCode::KeyL => Code::KeyL,
+                        TaoCode::KeyM => Code::KeyM, TaoCode::KeyN => Code::KeyN,
+                        TaoCode::KeyO => Code::KeyO, TaoCode::KeyP => Code::KeyP,
+                        TaoCode::KeyQ => Code::KeyQ, TaoCode::KeyR => Code::KeyR,
+                        TaoCode::KeyS => Code::KeyS, TaoCode::KeyT => Code::KeyT,
+                        TaoCode::KeyU => Code::KeyU, TaoCode::KeyV => Code::KeyV,
+                        TaoCode::KeyW => Code::KeyW, TaoCode::KeyX => Code::KeyX,
+                        TaoCode::KeyY => Code::KeyY, TaoCode::KeyZ => Code::KeyZ,
+                        TaoCode::Digit0 => Code::Digit0, TaoCode::Digit1 => Code::Digit1,
+                        TaoCode::Digit2 => Code::Digit2, TaoCode::Digit3 => Code::Digit3,
+                        TaoCode::Digit4 => Code::Digit4, TaoCode::Digit5 => Code::Digit5,
+                        TaoCode::Digit6 => Code::Digit6, TaoCode::Digit7 => Code::Digit7,
+                        TaoCode::Digit8 => Code::Digit8, TaoCode::Digit9 => Code::Digit9,
+                        TaoCode::Space => Code::Space,
+                        TaoCode::Enter => Code::Enter, TaoCode::NumpadEnter => Code::NumpadEnter,
+                        TaoCode::Backspace => Code::Backspace,
+                        TaoCode::Tab => Code::Tab,
+                        TaoCode::Escape => Code::Escape,
+                        TaoCode::ShiftLeft => Code::ShiftLeft, TaoCode::ShiftRight => Code::ShiftRight,
+                        TaoCode::ControlLeft => Code::ControlLeft, TaoCode::ControlRight => Code::ControlRight,
+                        TaoCode::AltLeft => Code::AltLeft, TaoCode::AltRight => Code::AltRight,
+                        TaoCode::SuperLeft => Code::MetaLeft, TaoCode::SuperRight => Code::MetaRight,
+                        TaoCode::CapsLock => Code::CapsLock,
+                        TaoCode::ArrowLeft => Code::ArrowLeft, TaoCode::ArrowRight => Code::ArrowRight,
+                        TaoCode::ArrowUp => Code::ArrowUp, TaoCode::ArrowDown => Code::ArrowDown,
+                        TaoCode::Home => Code::Home, TaoCode::End => Code::End,
+                        TaoCode::PageUp => Code::PageUp, TaoCode::PageDown => Code::PageDown,
+                        TaoCode::Delete => Code::Delete, TaoCode::Insert => Code::Insert,
+                        TaoCode::Minus => Code::Minus, TaoCode::Equal => Code::Equal,
+                        TaoCode::BracketLeft => Code::BracketLeft, TaoCode::BracketRight => Code::BracketRight,
+                        TaoCode::Backslash => Code::Backslash, TaoCode::Semicolon => Code::Semicolon,
+                        TaoCode::Quote => Code::Quote, TaoCode::Comma => Code::Comma,
+                        TaoCode::Period => Code::Period, TaoCode::Slash => Code::Slash,
+                        TaoCode::Backquote => Code::Backquote,
+                        _ => Code::Unidentified,
+                    };
+                    let mut modifiers = Modifiers::empty();
+                    if current_modifiers.shift_key()   { modifiers |= Modifiers::SHIFT; }
+                    if current_modifiers.control_key() { modifiers |= Modifiers::CONTROL; }
+                    if current_modifiers.alt_key()     { modifiers |= Modifiers::ALT; }
+                    if current_modifiers.super_key()   { modifiers |= Modifiers::META; }
                     let kb = KbEvent {
                         state,
                         key,
-                        code: Code::Unidentified,
+                        code,
                         location: Location::Standard,
-                        modifiers: Modifiers::empty(),
+                        modifiers,
                         repeat: _key_event.repeat,
                         is_composing: false,
                     };
+                    flog(&format!(
+                        "  → sv.on_key: state={:?} key={:?} code={:?} mods={:?}",
+                        kb.state, kb.key, kb.code, kb.modifiers,
+                    ));
                     sv.on_key(kb);
                 }
             }
@@ -492,6 +599,19 @@ pub fn run() {
                                     .send_event(UserEvent::ApplyTheme(parts[1].to_string()));
                             }
                         }
+                    } else if let Some(url) = msg.strip_prefix("navigate:") {
+                        // Re-emit as Navigate so the unified Servo navigation
+                        // handler below picks it up (handles both aurora:// and
+                        // external URLs).
+                        let _ = proxy_for_events.send_event(UserEvent::Navigate(url.to_string()));
+                    } else if let Some(payload) = msg.strip_prefix("add_bookmark:") {
+                        if let Some((t, u)) = payload.split_once('|') {
+                            let _ = proxy_for_events.send_event(UserEvent::AddBookmark(
+                                t.to_string(), u.to_string(),
+                            ));
+                        }
+                    } else if msg == "clear_history" {
+                        let _ = proxy_for_events.send_event(UserEvent::ClearHistory);
                     }
                     return;
                 }
@@ -751,7 +871,8 @@ pub fn run() {
                         if !url.starts_with("aurora://") {
                             current_url = url.clone();
                         }
-                        let escaped = url.replace('\\', "\\\\").replace('\'', "\\'");
+                        let display = display_url_for(&url, aurora_origin.as_deref());
+                        let escaped = display.replace('\\', "\\\\").replace('\'', "\\'");
                         let _ = toolbar_webview.evaluate_script(&format!("onUrlChanged('{}')", escaped));
                     }
                     UserEvent::UpdateTitle(title) => {
