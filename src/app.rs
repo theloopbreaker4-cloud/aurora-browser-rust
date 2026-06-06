@@ -1,12 +1,12 @@
 // app.rs — event loop, window creation, UserEvent dispatch
-use crate::about;
-use crate::bookmarks_page;
-use crate::downloads_page;
-use crate::error;
 use crate::events::UserEvent;
-use crate::history;
 use crate::ipc::generate_ipc_token;
-use crate::settings;
+use crate::pages::about;
+use crate::pages::bookmarks_page;
+use crate::pages::downloads_page;
+use crate::pages::error;
+use crate::pages::history;
+use crate::pages::settings;
 use crate::webviews;
 use std::process::Command;
 use std::time::Instant;
@@ -70,7 +70,7 @@ pub fn run() {
     // real http origin so localStorage / IndexedDB / SecureContext APIs work
     // (data: URLs always have an opaque origin, which the spec disallows).
     // Used only by Servo; wry continues to receive HTML via load_html.
-    let internal_server_port = match crate::internal_server::start_with_default_routes(&ipc_token) {
+    let internal_server_port = match crate::platform::internal_server::start_with_default_routes(&ipc_token) {
         Ok(s) => Some(s.port),
         Err(_) => None,
     };
@@ -82,7 +82,7 @@ pub fn run() {
         .with_title("Aurora Browser")
         .with_inner_size(tao::dpi::LogicalSize::new(1280.0, 800.0))
         .with_decorations(false);
-    if let Some(ico) = crate::icon::load_aurora_icon() {
+    if let Some(ico) = crate::platform::icon::load_aurora_icon() {
         wb = wb.with_window_icon(Some(ico));
     }
     let window = wb.build(&event_loop).expect("Failed to create window");
@@ -647,12 +647,12 @@ pub fn run() {
                                     "bookmarks" => bookmarks_page::get_bookmarks_html(&ipc_token),
                                     "downloads" => downloads_page::get_downloads_html(&ipc_token),
                                     "about" => about::get_about_html(&ipc_token),
-                                    "test" => crate::test_page::get_test_html(),
-                                    "extensions" => crate::extensions::get_extensions_html(&ipc_token),
-                                    "incognito" => crate::incognito::get_incognito_html(&ipc_token),
-                                    "tab_groups" => crate::tab_groups::get_tab_groups_html(&ipc_token),
-                                    "benchmarks" => crate::benchmarks::get_benchmarks_html(&ipc_token),
-                                    "feedback" => crate::feedback::get_feedback_html(&ipc_token),
+                                    "test" => crate::pages::test_page::get_test_html(),
+                                    "extensions" => crate::pages::extensions::get_extensions_html(&ipc_token),
+                                    "incognito" => crate::pages::incognito::get_incognito_html(&ipc_token),
+                                    "tab_groups" => crate::pages::tab_groups::get_tab_groups_html(&ipc_token),
+                                    "benchmarks" => crate::pages::benchmarks::get_benchmarks_html(&ipc_token),
+                                    "feedback" => crate::pages::feedback::get_feedback_html(&ipc_token),
                                     _ => portal_html_for_loop.clone(),
                                 };
                                 sv.load_html(&html);
@@ -748,32 +748,32 @@ pub fn run() {
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url == "aurora://test" {
                             if let Some(ref cv) = content_webview_opt {
-                                let _ = cv.load_html(&crate::test_page::get_test_html());
+                                let _ = cv.load_html(&crate::pages::test_page::get_test_html());
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url == "aurora://extensions" {
                             if let Some(ref cv) = content_webview_opt {
-                                let _ = cv.load_html(&crate::extensions::get_extensions_html(&ipc_token));
+                                let _ = cv.load_html(&crate::pages::extensions::get_extensions_html(&ipc_token));
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url == "aurora://incognito" {
                             if let Some(ref cv) = content_webview_opt {
-                                let _ = cv.load_html(&crate::incognito::get_incognito_html(&ipc_token));
+                                let _ = cv.load_html(&crate::pages::incognito::get_incognito_html(&ipc_token));
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url == "aurora://tab_groups" {
                             if let Some(ref cv) = content_webview_opt {
-                                let _ = cv.load_html(&crate::tab_groups::get_tab_groups_html(&ipc_token));
+                                let _ = cv.load_html(&crate::pages::tab_groups::get_tab_groups_html(&ipc_token));
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url == "aurora://benchmarks" {
                             if let Some(ref cv) = content_webview_opt {
-                                let _ = cv.load_html(&crate::benchmarks::get_benchmarks_html(&ipc_token));
+                                let _ = cv.load_html(&crate::pages::benchmarks::get_benchmarks_html(&ipc_token));
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url == "aurora://feedback" {
                             if let Some(ref cv) = content_webview_opt {
-                                let _ = cv.load_html(&crate::feedback::get_feedback_html(&ipc_token));
+                                let _ = cv.load_html(&crate::pages::feedback::get_feedback_html(&ipc_token));
                             }
                             let _ = proxy_for_events.send_event(UserEvent::UpdateUrl(url.clone()));
                         } else if url.starts_with("aurora://error") {
@@ -858,11 +858,11 @@ pub fn run() {
                         }
                     }
                     UserEvent::ClearHistory => {
-                        crate::history::clear_history();
+                        crate::pages::history::clear_history();
                         // If history page is currently open, reload it to show empty state.
                         if current_url.starts_with("aurora://history") {
                             if let Some(ref cv) = content_webview_opt {
-                                let _ = cv.load_html(&crate::history::get_history_html(&ipc_token));
+                                let _ = cv.load_html(&crate::pages::history::get_history_html(&ipc_token));
                             }
                         }
                     }

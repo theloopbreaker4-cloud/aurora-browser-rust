@@ -1,0 +1,13 @@
+pub mod about;
+pub mod benchmarks;
+pub mod bookmarks_page;
+pub mod downloads_page;
+pub mod error;
+pub mod extensions;
+pub mod feedback;
+pub mod history;
+pub mod incognito;
+pub mod portal;
+pub mod settings;
+pub mod tab_groups;
+pub mod test_page;

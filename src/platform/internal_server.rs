@@ -98,18 +98,18 @@ fn write_status(stream: &mut TcpStream, code: u16, phrase: &str, mime: &str, bod
 pub fn build_resolver(ipc_token: String) -> RouteResolver {
     Arc::new(move |path: &str| -> Option<(String, String)> {
         let html = match path.trim_end_matches('/') {
-            "" | "/newtab" | "/portal" => crate::portal::get_portal_html(&ipc_token),
-            "/settings" => crate::settings::get_settings_html(&ipc_token),
-            "/history" => crate::history::get_history_html(&ipc_token),
-            "/bookmarks" => crate::bookmarks_page::get_bookmarks_html(&ipc_token),
-            "/downloads" => crate::downloads_page::get_downloads_html(&ipc_token),
-            "/about" => crate::about::get_about_html(&ipc_token),
-            "/test" => crate::test_page::get_test_html(),
-            "/extensions" => crate::extensions::get_extensions_html(&ipc_token),
-            "/incognito" => crate::incognito::get_incognito_html(&ipc_token),
-            "/tab_groups" => crate::tab_groups::get_tab_groups_html(&ipc_token),
-            "/benchmarks" => crate::benchmarks::get_benchmarks_html(&ipc_token),
-            "/feedback" => crate::feedback::get_feedback_html(&ipc_token),
+            "" | "/newtab" | "/portal" => crate::pages::portal::get_portal_html(&ipc_token),
+            "/settings" => crate::pages::settings::get_settings_html(&ipc_token),
+            "/history" => crate::pages::history::get_history_html(&ipc_token),
+            "/bookmarks" => crate::pages::bookmarks_page::get_bookmarks_html(&ipc_token),
+            "/downloads" => crate::pages::downloads_page::get_downloads_html(&ipc_token),
+            "/about" => crate::pages::about::get_about_html(&ipc_token),
+            "/test" => crate::pages::test_page::get_test_html(),
+            "/extensions" => crate::pages::extensions::get_extensions_html(&ipc_token),
+            "/incognito" => crate::pages::incognito::get_incognito_html(&ipc_token),
+            "/tab_groups" => crate::pages::tab_groups::get_tab_groups_html(&ipc_token),
+            "/benchmarks" => crate::pages::benchmarks::get_benchmarks_html(&ipc_token),
+            "/feedback" => crate::pages::feedback::get_feedback_html(&ipc_token),
             _ => return None,
         };
         Some(("text/html".to_string(), html))

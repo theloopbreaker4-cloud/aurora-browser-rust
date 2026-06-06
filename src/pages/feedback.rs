@@ -21,8 +21,6 @@ fn collect_diagnostics() -> String {
     let os = std::env::consts::OS;
     let arch = std::env::consts::ARCH;
 
-    // Tail of servo_log.txt, if it exists. Cap at last 30 lines so the report
-    // size stays sane.
     let log_tail = read_log_tail(30);
 
     let log_json = serde_json::Value::Array(

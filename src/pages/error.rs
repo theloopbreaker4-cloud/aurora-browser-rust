@@ -1,7 +1,7 @@
 // error.rs — custom error page for network/navigation failures
 use base64::Engine;
 
-const BRAND_SVG: &str = include_str!("../brand.svg");
+const BRAND_SVG: &str = include_str!("../../brand.svg");
 
 pub struct ErrorInfo {
     pub url: String,

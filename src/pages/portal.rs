@@ -2,7 +2,7 @@
 use crate::config;
 use base64::Engine;
 
-const BRAND_SVG: &str = include_str!("../brand.svg");
+const BRAND_SVG: &str = include_str!("../../brand.svg");
 
 pub fn get_portal_html(ipc_token: &str) -> String {
     let bookmarks_json = config::load_bookmarks();

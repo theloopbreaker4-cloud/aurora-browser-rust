@@ -2,31 +2,19 @@
 // License: MIT
 #![windows_subsystem = "windows"]
 
-mod about;
 mod app;
-mod benchmarks;
-mod bookmarks_page;
 mod config;
-#[cfg(all(windows, feature = "servo-engine"))]
-mod dialogs;
-mod downloads_page;
-mod error;
+mod engine;
 mod events;
-mod extensions;
-mod feedback;
-mod history;
-mod icon;
-mod incognito;
-mod internal_server;
 mod ipc;
-mod portal;
-#[cfg(feature = "servo-engine")]
-mod servo_view;
-mod settings;
-mod tab_groups;
-mod test_page;
+mod pages;
+mod platform;
 mod toolbar;
 mod webviews;
+
+// Legacy re-export shim so app.rs can still use crate::servo_view::
+#[cfg(feature = "servo-engine")]
+mod servo_view;
 
 fn main() {
     app::run();

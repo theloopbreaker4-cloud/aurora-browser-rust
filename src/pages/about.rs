@@ -1,6 +1,6 @@
 // about.rs — builds about page HTML with version/build info
 use base64::Engine;
-const BRAND_SVG: &str = include_str!("../brand.svg");
+const BRAND_SVG: &str = include_str!("../../brand.svg");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn get_about_html(ipc_token: &str) -> String {
