@@ -88,15 +88,15 @@ cargo build --release --features servo-engine
 
 ## How this project is made
 
-This project is my experiment in browser-building. I started it, I drive
-the product direction, I test, and I make the architectural decisions.
+This project is my experiment in browser-building. I started it, drive the
+product direction, make all architectural decisions, and do the testing.
 
-Most of the Rust code is written by Claude AI to my specifications and
-under my supervision. I'm still learning Rust — the AI accelerates
-implementation, I provide direction, review, and verification.
+I use Claude AI as an assistant — roughly 30–40% of the work, mostly for
+testing, code review, and speeding up implementation of well-defined tasks.
+All direction, verification, and final calls are mine.
 
-I'm writing this openly because I think transparency matters more than
-the impression I make.
+I'm writing this openly because transparency matters more than the impression
+it makes.
 
 ## License
 
