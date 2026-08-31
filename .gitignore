@@ -5,6 +5,9 @@ Cargo.lock
 # Claude Code — internal AI tooling, not for public
 .claude/
 
+# Machine-local build config (contains absolute paths)
+.cargo/config.toml
+
 # User data (personal, machine-specific)
 config.json
 bookmarks.json

@@ -45,16 +45,35 @@
 git clone https://github.com/theloopbreaker4-cloud/AuroraBrowserRust
 cd AuroraBrowserRust
 
-# Build (WebView2 engine)
+# Build (WebView2 engine — works out of the box)
 cargo build --release
-
-# Build with Servo engine support
-cargo build --release --features servo-engine
 
 # Run
 ./target/release/aurora.exe
+```
 
-# Run with Servo engine
+### Servo engine (optional)
+
+Servo build requires two extra repos cloned **next to** AuroraBrowserRust:
+
+```
+parent/
+  AuroraBrowserRust/   ← this repo
+  ServoRust/servo/     ← https://github.com/servo/servo
+  stylo/               ← https://github.com/servo/stylo  (patched, see docs/stylo-patches/)
+```
+
+Then copy and configure the machine-local build config:
+
+```bash
+cp .cargo/config.toml.example .cargo/config.toml
+# Edit .cargo/config.toml — set correct absolute paths for ServoRust and stylo
+```
+
+Then build:
+
+```bash
+cargo build --release --features servo-engine
 ./target/release/aurora.exe --engine=servo
 ```
 
