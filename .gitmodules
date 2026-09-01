@@ -1,0 +1,7 @@
+[submodule "vendor/stylo"]
+	path = vendor/stylo
+	url = https://github.com/theloopbreaker4-cloud/stylo.git
+	branch = aurora-patches
+[submodule "vendor/servo"]
+	path = vendor/servo
+	url = https://github.com/theloopbreaker4-cloud/servo.git

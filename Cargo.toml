@@ -33,7 +33,7 @@ euclid = { version = "0.22", optional = true }
 # Servo engine — embedded rendering backend
 # Features: minimal set, no media/bluetooth/webxr, no baked-in-resources (we supply them)
 [dependencies.servo]
-path = "../ServoRust/servo/components/servo"
+path = "vendor/servo/components/servo"
 default-features = false
 features = ["baked-in-resources", "gamepad"]
 optional = true

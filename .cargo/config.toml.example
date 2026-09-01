@@ -1,24 +1,20 @@
 # Aurora Browser — machine-local build configuration
-# Copy this file to .cargo/config.toml and adjust paths for your machine.
-# This file is committed; config.toml is gitignored (it contains local paths).
+# Copy this file to .cargo/config.toml (it is gitignored).
+# For WebView2-only builds this file is not needed at all.
 
 [env]
-# Prebuilt SpiderMonkey archive — avoids rebuilding mozjs from source (~30 min).
-# After building Servo once, find the path with:
-#   dir /s /b ServoRust\servo\target\debug\build\mozjs_sys*\out\*.tar.gz
-MOZJS_ARCHIVE = { value = "C:\\path\\to\\ServoRust\\servo\\target\\debug\\build\\mozjs_sys-HASH\\out\\libmozjs-x86_64-pc-windows-msvc.tar.gz", force = false }
-
-# Aurora local stylo patch: unblocks :has() selector and backdrop-filter.
-# 1. Clone https://github.com/servo/stylo next to AuroraBrowserRust
-# 2. Apply patches from docs/stylo-patches/
-# 3. Set paths below to your stylo clone location
+# Prebuilt SpiderMonkey archive — skips ~30 min mozjs rebuild on subsequent builds.
+# After first Servo build, find the hash and set the path:
+#   dir /s /b vendor\servo\target\debug\build\mozjs_sys*\out\*.tar.gz
+# Leave commented out on first build.
+# MOZJS_ARCHIVE = { value = "C:\\path\\to\\AuroraBrowserRust\\vendor\\servo\\target\\debug\\build\\mozjs_sys-HASH\\out\\libmozjs-x86_64-pc-windows-msvc.tar.gz", force = false }
 
 [patch."https://github.com/servo/stylo"]
-selectors            = { path = "C:\\path\\to\\stylo\\selectors" }
-servo_arc            = { path = "C:\\path\\to\\stylo\\servo_arc" }
-stylo                = { path = "C:\\path\\to\\stylo\\style" }
-stylo_atoms          = { path = "C:\\path\\to\\stylo\\stylo_atoms" }
-stylo_dom            = { path = "C:\\path\\to\\stylo\\stylo_dom" }
-stylo_malloc_size_of = { path = "C:\\path\\to\\stylo\\malloc_size_of" }
-stylo_static_prefs   = { path = "C:\\path\\to\\stylo\\stylo_static_prefs" }
-stylo_traits         = { path = "C:\\path\\to\\stylo\\style_traits" }
+selectors            = { path = "vendor/stylo/selectors" }
+servo_arc            = { path = "vendor/stylo/servo_arc" }
+stylo                = { path = "vendor/stylo/style" }
+stylo_atoms          = { path = "vendor/stylo/stylo_atoms" }
+stylo_dom            = { path = "vendor/stylo/stylo_dom" }
+stylo_malloc_size_of = { path = "vendor/stylo/malloc_size_of" }
+stylo_static_prefs   = { path = "vendor/stylo/stylo_static_prefs" }
+stylo_traits         = { path = "vendor/stylo/style_traits" }
